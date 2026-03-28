@@ -1,0 +1,41 @@
+name: PHP Web App CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install Composer dependencies
+      run: composer install --no-progress --no-suggest --prefer-dist || echo "No composer.json found"
+
+    - name: PHP Lint
+      run: |
+        Get-ChildItem -Recurse -Include *.php | ForEach-Object { php -l $_.FullName }
+
+    - name: Deploy to local WAMP
+      run: |
+        xcopy /E /I /Y .\* "C:\wamp64\www\scolapp\"
+
+    # Déploiement FTP optionnel
+    #- name: Deploy to FTP
+    #  uses: SamKirkland/FTP-Deploy-Action@4.3.0
+    #  with:
+    #    server: ftp.tonserveur.com
+    #    username: ${{ secrets.FTP_USERNAME }}
+    #    password: ${{ secrets.FTP_PASSWORD }}
+    #    local-dir: ./ 
+    #    server-dir: /www/scolapp/
