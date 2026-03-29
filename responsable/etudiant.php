@@ -99,22 +99,48 @@ if(isset($_POST['creer_etudiant'])){
 }
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
+$idFiliereResp = isset($_SESSION['id_filiere']) ? (int)$_SESSION['id_filiere'] : 0;
 if($idNiveau <= 0){
-    $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
+    $stmtN = $pdo->prepare("SELECT id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
     $stmtN->execute(['id'=>$_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
+    $idFiliereResp = $r && $r['id_filiere'] !== null ? (int)$r['id_filiere'] : 0;
     $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
+    $_SESSION['id_filiere'] = $idFiliereResp > 0 ? $idFiliereResp : null;
 }
 
-$stmtClasses = $pdo->prepare("\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n");
-$stmtClasses->execute(['idNiveau'=>$idNiveau]);
+$stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
+$stmtLib->execute(['id'=>$idNiveau]);
+$niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
+$libelleNiveau = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
+
+$stmtDescCol = $pdo->prepare("SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='classe' AND column_name='description_classe' LIMIT 1");
+$stmtDescCol->execute();
+$hasDescriptionClasse = (bool)$stmtDescCol->fetchColumn();
+
+$stmtClasses = $pdo->prepare($idFiliereResp > 0
+    ? "\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere\n    ORDER BY f.nom_filiere, c.nom_classe\n"
+    : "\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n"
+);
+$params = ['idNiveau'=>$idNiveau];
+if($idFiliereResp > 0){
+    $params['idFiliere'] = $idFiliereResp;
+}
+$stmtClasses->execute($params);
 $classes = $stmtClasses->fetchAll(PDO::FETCH_ASSOC);
 $idClasseFiltre = isset($_GET['id_classe']) ? (int)$_GET['id_classe'] : 0;
 $classeFiltreInfo = null;
 if($idClasseFiltre > 0){
-    $stmt = $pdo->prepare("\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau\n        LIMIT 1\n    ");
-    $stmt->execute(['id'=>$idClasseFiltre, 'idNiveau'=>$idNiveau]);
+    $stmt = $pdo->prepare($idFiliereResp > 0
+        ? "\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere\n        LIMIT 1\n    "
+        : "\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau\n        LIMIT 1\n    "
+    );
+    $params = ['id'=>$idClasseFiltre, 'idNiveau'=>$idNiveau];
+    if($idFiliereResp > 0){
+        $params['idFiliere'] = $idFiliereResp;
+    }
+    $stmt->execute($params);
     $classeFiltreInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     if(!$classeFiltreInfo){
         $idClasseFiltre = 0;
@@ -124,14 +150,27 @@ $etudiantEdit = null;
 if(isset($_GET['edit'])){
     $idEdit = (int)$_GET['edit'];
     if($idEdit > 0){
-        $stmt = $pdo->prepare("
+        $stmt = $pdo->prepare($idFiliereResp > 0
+            ? "
+            SELECT e.*
+            FROM etudiant e
+            JOIN classe c ON c.id_classe=e.id_classe
+            WHERE e.id_etudiant=:id AND c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere
+            LIMIT 1
+        "
+            : "
             SELECT e.*
             FROM etudiant e
             JOIN classe c ON c.id_classe=e.id_classe
             WHERE e.id_etudiant=:id AND c.id_niveau=:idNiveau
             LIMIT 1
-        ");
-        $stmt->execute(['id'=>$idEdit, 'idNiveau'=>$idNiveau]);
+        "
+        );
+        $params = ['id'=>$idEdit, 'idNiveau'=>$idNiveau];
+        if($idFiliereResp > 0){
+            $params['idFiliere'] = $idFiliereResp;
+        }
+        $stmt->execute($params);
         $etudiantEdit = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
@@ -141,26 +180,50 @@ if($idClasseFiltre > 0){
         SELECT e.*, c.nom_classe AS classe
         FROM etudiant e
         JOIN classe c ON e.id_classe=c.id_classe
-        WHERE e.id_classe=:idClasse AND c.id_niveau=:idNiveau
+        WHERE e.id_classe=:idClasse AND c.id_niveau=:idNiveau".($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "")."
         ORDER BY e.nom_etudiant, e.prenom_etudiant
     ");
-    $stmt->execute(['idClasse'=>$idClasseFiltre, 'idNiveau'=>$idNiveau]);
+    $params = ['idClasse'=>$idClasseFiltre, 'idNiveau'=>$idNiveau];
+    if($idFiliereResp > 0){
+        $params['idFiliere'] = $idFiliereResp;
+    }
+    $stmt->execute($params);
     $etudiants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    $stmt = $pdo->prepare("
+    $stmt = $pdo->prepare($idFiliereResp > 0
+        ? "
+        SELECT e.*, c.nom_classe AS classe
+        FROM etudiant e
+        JOIN classe c ON e.id_classe=c.id_classe
+        WHERE c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere
+        ORDER BY e.nom_etudiant, e.prenom_etudiant
+    "
+        : "
         SELECT e.*, c.nom_classe AS classe
         FROM etudiant e
         JOIN classe c ON e.id_classe=c.id_classe
         WHERE c.id_niveau=:idNiveau
         ORDER BY e.nom_etudiant, e.prenom_etudiant
-    ");
-    $stmt->execute(['idNiveau'=>$idNiveau]);
+    "
+    );
+    $params = ['idNiveau'=>$idNiveau];
+    if($idFiliereResp > 0){
+        $params['idFiliere'] = $idFiliereResp;
+    }
+    $stmt->execute($params);
     $etudiants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $classesIndex = [];
 foreach($classes as $cl){
     $classesIndex[(int)$cl['id_classe']] = $cl;
+}
+
+function classe_label($classeRow, $libelleNiveau, $hasDescriptionClasse){
+    $desc = $hasDescriptionClasse ? trim((string)($classeRow['description_classe'] ?? '')) : '';
+    $base = $desc !== '' ? $desc : trim((string)($classeRow['nom_classe'] ?? ''));
+    $prefix = trim((string)$libelleNiveau);
+    return $prefix !== '' ? ($prefix.' — '.$base) : $base;
 }
 
 $etudiantsParClasse = [];
@@ -179,6 +242,7 @@ foreach($etudiants as $e){
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Responsable - Étudiants</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -214,11 +278,10 @@ foreach($etudiants as $e){
 <div class="app-shell">
     <aside class="sidebar">
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <div class="spacer"></div>
-        <a href="../index.php">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 
@@ -227,7 +290,12 @@ foreach($etudiants as $e){
             <div class="dash-topbar">
                 <div class="dash-title">
                     <h1>Étudiants</h1>
-                    <p>Gestion des étudiants<?= ($idClasseFiltre > 0 && $classeFiltreInfo) ? ' — '.htmlspecialchars($classeFiltreInfo['nom_classe']) : '' ?></p>
+                    <p>
+                        Gestion des étudiants
+                        <?php if($idClasseFiltre > 0 && $classeFiltreInfo): ?>
+                            — <?= htmlspecialchars(classe_label($classeFiltreInfo, $libelleNiveau, $hasDescriptionClasse)) ?>
+                        <?php endif; ?>
+                    </p>
                 </div>
                 <div class="dash-actions">
                     <a class="btn btn-secondary" href="parametres.php">Retour Paramètres</a>
@@ -253,7 +321,7 @@ foreach($etudiants as $e){
                             <input type="text" name="prenom_etudiant" value="<?= htmlspecialchars($etudiantEdit['prenom_etudiant'] ?? '') ?>" required>
                             <select name="id_classe" required>
                                 <?php foreach($classes as $cl): ?>
-                                    <option value="<?= (int)$cl['id_classe'] ?>" <?= ((int)$etudiantEdit['id_classe']===(int)$cl['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars($cl['nom_classe'].($cl['nom_filiere'] ? ' - '.$cl['nom_filiere'] : '')) ?></option>
+                                    <option value="<?= (int)$cl['id_classe'] ?>" <?= ((int)$etudiantEdit['id_classe']===(int)$cl['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <div class="auth-actions">
@@ -277,7 +345,7 @@ foreach($etudiants as $e){
                                 <input type="text" name="prenom_etudiant" placeholder="Prénom">
                                 <select name="id_classe">
                                     <?php foreach($classes as $cl): ?>
-                                        <option value="<?= $cl['id_classe'] ?>" <?= ($idClasseFiltre>0 && (int)$cl['id_classe']===(int)$idClasseFiltre) ? 'selected' : '' ?>><?= htmlspecialchars($cl['nom_classe'].($cl['nom_filiere'] ? ' - '.$cl['nom_filiere'] : '')) ?></option>
+                                        <option value="<?= (int)$cl['id_classe'] ?>" <?= ($idClasseFiltre>0 && (int)$cl['id_classe']===(int)$idClasseFiltre) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="auth-actions">
@@ -289,7 +357,7 @@ foreach($etudiants as $e){
                         <?php if($idClasseFiltre > 0): ?>
                             <?php
                                 $cl = $classeFiltreInfo;
-                                $labelClasse = $cl ? ($cl['nom_classe'].(!empty($cl['nom_filiere']) ? ' - '.$cl['nom_filiere'] : '')) : 'Classe';
+                                $labelClasse = $cl ? classe_label($cl, $libelleNiveau, $hasDescriptionClasse) : 'Classe';
                                 $liste = isset($etudiantsParClasse[$idClasseFiltre]) ? $etudiantsParClasse[$idClasseFiltre] : [];
                             ?>
                             <h3 style="margin-top:10px;">Classe : <?= htmlspecialchars($labelClasse) ?></h3>
@@ -327,7 +395,7 @@ foreach($etudiants as $e){
                             <p style="margin-top:10px;">Choisissez une classe puis cliquez sur <strong>Voir</strong> pour afficher la liste des étudiants.</p>
                             <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
                                 <?php foreach($classes as $cl): ?>
-                                    <?php $labelClasse = $cl['nom_classe'].(!empty($cl['nom_filiere']) ? ' - '.$cl['nom_filiere'] : ''); ?>
+                                    <?php $labelClasse = classe_label($cl, $libelleNiveau, $hasDescriptionClasse); ?>
                                     <div class="section" style="margin:0;">
                                         <h3 style="margin:0 0 10px 0;"><?= htmlspecialchars($labelClasse) ?></h3>
                                         <a class="btn btn-secondary" href="etudiant.php?id_classe=<?= (int)$cl['id_classe'] ?>">Voir</a>

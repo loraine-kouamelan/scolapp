@@ -19,6 +19,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Responsable - Paramètres</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -54,11 +55,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <div class="app-shell">
     <aside class="sidebar">
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <div class="spacer"></div>
-        <a href="../index.php">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 
@@ -73,14 +73,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
             <div class="dash-grid">
                 <div class="dash-col">
-                    <div class="card">
-                        <h2>Filières</h2>
-                        <p>Créer, modifier ou supprimer des filières.</p>
-                        <div class="auth-actions">
-                            <a class="btn btn-primary" href="filiere.php">Ouvrir</a>
-                        </div>
-                    </div>
-
                     <div class="card">
                         <h2>Classes</h2>
                         <p>Gérer les classes (niveau + filière).</p>

@@ -72,10 +72,16 @@ $stmtMat = $pdo->prepare("SELECT m.* FROM matiere m WHERE m.id_matiere=:idMatier
 $stmtMat->execute(['idMatiere'=>$idMatiere]);
 $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
 
-$stmtEtuNotes = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, c.nom_classe AS classe, s.note
+$stmtEtuNotes = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, c.nom_classe AS classe, n.note
     FROM etudiant e
     JOIN classe c ON e.id_classe=c.id_classe
-    LEFT JOIN suivi s ON s.id_etudiant=e.id_etudiant AND s.id_matiere=:idMatiere
+    LEFT JOIN (
+        SELECT id_etudiant, MAX(id_note) AS id_note
+        FROM notes
+        WHERE id_matiere=:idMatiere
+        GROUP BY id_etudiant
+    ) ln ON ln.id_etudiant=e.id_etudiant
+    LEFT JOIN notes n ON n.id_note=ln.id_note
     WHERE e.id_classe=:idClasse
     ORDER BY e.nom_etudiant, e.prenom_etudiant
 ");
@@ -86,6 +92,7 @@ $rows = $stmtEtuNotes->fetchAll(PDO::FETCH_ASSOC);
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Enseignant - Liste des notes</title>
 <link rel="stylesheet" href="../style.css">
 </head>

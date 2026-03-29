@@ -7,13 +7,20 @@ $message = "";
 // Fetch all responsables for the selection list
 $responsables = $pdo->query("SELECT id_responsable, nom_responsable, prenom_responsable, id_niveau FROM responsable ORDER BY nom_responsable, prenom_responsable")->fetchAll(PDO::FETCH_ASSOC);
 
+$stmtRespFilCol = $pdo->prepare("SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='responsable' AND column_name='id_filiere' LIMIT 1");
+$stmtRespFilCol->execute();
+$hasResponsableFiliere = (bool)$stmtRespFilCol->fetchColumn();
+
 if(isset($_POST['connexion_principal'])){
     $idResponsable = isset($_POST['id_responsable']) ? (int)$_POST['id_responsable'] : 0;
     $mdp = isset($_POST['motDePasse']) ? $_POST['motDePasse'] : '';
 
     if($idResponsable > 0){
         // Login existing responsable
-        $stmt = $pdo->prepare("SELECT id_responsable, mdp_responsable, id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
+        $stmt = $pdo->prepare($hasResponsableFiliere
+            ? "SELECT id_responsable, mdp_responsable, id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
+            : "SELECT id_responsable, mdp_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
+        );
         $stmt->execute(['id'=>$idResponsable]);
         $p = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -27,6 +34,7 @@ if(isset($_POST['connexion_principal'])){
             $_SESSION['id'] = (int)$p['id_responsable'];
             $_SESSION['role'] = 'RESPONSABLE';
             $_SESSION['id_niveau'] = $p['id_niveau'] !== null ? (int)$p['id_niveau'] : null;
+            $_SESSION['id_filiere'] = $hasResponsableFiliere && $p['id_filiere'] !== null ? (int)$p['id_filiere'] : null;
             header("Location: tb_principal.php");
             exit();
         }
@@ -35,6 +43,7 @@ if(isset($_POST['connexion_principal'])){
         $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
         $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
         $nouveauNiveau = isset($_POST['nouveau_niveau']) ? trim($_POST['nouveau_niveau']) : '';
+        $nouvelleFiliere = isset($_POST['nouvelle_filiere']) ? trim($_POST['nouvelle_filiere']) : '';
 
         $idNiveau = 0;
         if($nouveauNiveau !== ''){
@@ -54,8 +63,27 @@ if(isset($_POST['connexion_principal'])){
             }
         }
 
-        if($nom === '' || $prenom === '' || $mdp === '' || $idNiveau <= 0){
-            $message = "Veuillez renseigner le nom, le prénom, le niveau et le mot de passe.";
+        $idFiliere = 0;
+        if($nouvelleFiliere !== ''){
+            $nomFiliereDb = $nouvelleFiliere;
+            $stmtFindF = $pdo->prepare("SELECT id_filiere FROM filiere WHERE LOWER(nom_filiere)=LOWER(:nom) LIMIT 1");
+            $stmtFindF->execute(['nom'=>$nomFiliereDb]);
+            $foundF = $stmtFindF->fetch(PDO::FETCH_ASSOC);
+            if($foundF){
+                $idFiliere = (int)$foundF['id_filiere'];
+            } else {
+                try {
+                    $stmtF = $pdo->prepare("INSERT INTO filiere (nom_filiere) VALUES (:nom)");
+                    $stmtF->execute(['nom'=>$nomFiliereDb]);
+                    $idFiliere = (int)$pdo->lastInsertId();
+                } catch (PDOException $e){
+                    $idFiliere = 0;
+                }
+            }
+        }
+
+        if($nom === '' || $prenom === '' || $mdp === '' || $idNiveau <= 0 || $idFiliere <= 0){
+            $message = "Veuillez renseigner le nom, le prénom, le niveau, la filière et le mot de passe.";
         } else {
             try {
                 $stmtExists = $pdo->prepare("SELECT id_responsable FROM responsable WHERE id_niveau=:idNiveau LIMIT 1");
@@ -63,7 +91,7 @@ if(isset($_POST['connexion_principal'])){
                 $deja = $stmtExists->fetch(PDO::FETCH_ASSOC);
 
                 if($deja){
-                    $message = "Un responsable existe déjà pour cette filière.";
+                    $message = "Un responsable existe déjà pour ce niveau.";
                 } else {
                 $stmt2 = $pdo->prepare("INSERT INTO responsable (nom_responsable, prenom_responsable, mdp_responsable, id_niveau) VALUES (:nom, :prenom, :mdp, :idNiveau)");
                 $stmt2->execute([
@@ -76,6 +104,13 @@ if(isset($_POST['connexion_principal'])){
                 $_SESSION['id'] = (int)$pdo->lastInsertId();
                 $_SESSION['role'] = 'RESPONSABLE';
                 $_SESSION['id_niveau'] = $idNiveau;
+                if($hasResponsableFiliere){
+                    $stmtUp = $pdo->prepare("UPDATE responsable SET id_filiere=:idFiliere WHERE id_responsable=:id LIMIT 1");
+                    $stmtUp->execute(['idFiliere'=>$idFiliere, 'id'=>$_SESSION['id']]);
+                    $_SESSION['id_filiere'] = $idFiliere;
+                } else {
+                    $_SESSION['id_filiere'] = null;
+                }
                 header("Location: tb_principal.php");
                 exit();
                 }
@@ -90,6 +125,7 @@ if(isset($_POST['connexion_principal'])){
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Connexion Responsable</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -119,7 +155,15 @@ if(isset($_POST['connexion_principal'])){
                         <input type="text" name="nom" id="create_nom" placeholder="Nom">
                         <input type="text" name="prenom" id="create_prenom" placeholder="Prénom">
                     </div>
-                    <input type="text" name="nouveau_niveau" id="create_niveau" placeholder="Niveau">
+                    <select name="nouveau_niveau" id="create_niveau">
+                        <option value="">-- Niveau --</option>
+                        <option value="Licence 1">Licence 1</option>
+                        <option value="Licence 2">Licence 2</option>
+                        <option value="Licence 3">Licence 3</option>
+                        <option value="Master 1">Master 1</option>
+                        <option value="Master 2">Master 2</option>
+                    </select>
+                    <input type="text" name="nouvelle_filiere" id="create_filiere" placeholder="Filière (ex: Informatique)">
                 </div>
 
                 <label>Mot de passe</label>
@@ -138,6 +182,7 @@ if(isset($_POST['connexion_principal'])){
                     var nom = document.getElementById('create_nom');
                     var prenom = document.getElementById('create_prenom');
                     var niveau = document.getElementById('create_niveau');
+                    var filiere = document.getElementById('create_filiere');
 
                     function sync(){
                         var isNew = !sel || sel.value === '0';
@@ -148,6 +193,7 @@ if(isset($_POST['connexion_principal'])){
                         if(nom){ nom.required = isNew; nom.disabled = !isNew; }
                         if(prenom){ prenom.required = isNew; prenom.disabled = !isNew; }
                         if(niveau){ niveau.required = isNew; niveau.disabled = !isNew; }
+                        if(filiere){ filiere.required = isNew; filiere.disabled = !isNew; }
                     }
 
                     if(sel){

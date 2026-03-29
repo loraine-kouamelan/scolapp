@@ -80,20 +80,37 @@ $stmtEtu = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudian
 $stmtEtu->execute(['idClasse'=>$idClasse]);
 $etudiants = $stmtEtu->fetchAll(PDO::FETCH_ASSOC);
 
-$stmtSuivi = $pdo->prepare("SELECT id_etudiant, note, absence FROM suivi WHERE id_matiere=:idMatiere");
-$stmtSuivi->execute(['idMatiere'=>$idMatiere]);
-$suiviRaw = $stmtSuivi->fetchAll(PDO::FETCH_ASSOC);
+$stmtNotes = $pdo->prepare("SELECT n.id_etudiant, AVG(n.note) AS moyenne
+    FROM notes n
+    JOIN etudiant e ON e.id_etudiant=n.id_etudiant
+    WHERE n.id_matiere=:idMatiere AND e.id_classe=:idClasse
+    GROUP BY n.id_etudiant
+");
+$stmtNotes->execute(['idMatiere'=>$idMatiere, 'idClasse'=>$idClasse]);
+$notesRaw = $stmtNotes->fetchAll(PDO::FETCH_ASSOC);
 $notes = [];
+foreach($notesRaw as $row){
+    $notes[(int)$row['id_etudiant']] = $row['moyenne'];
+}
+
+$stmtAbs = $pdo->prepare("SELECT a.id_etudiant, COUNT(*) AS nb
+    FROM absence a
+    JOIN etudiant e ON e.id_etudiant=a.id_etudiant
+    WHERE a.id_matiere=:idMatiere AND e.id_classe=:idClasse
+    GROUP BY a.id_etudiant
+");
+$stmtAbs->execute(['idMatiere'=>$idMatiere, 'idClasse'=>$idClasse]);
+$absRaw = $stmtAbs->fetchAll(PDO::FETCH_ASSOC);
 $absences = [];
-foreach($suiviRaw as $row){
-    $notes[$row['id_etudiant']] = $row['note'];
-    $absences[$row['id_etudiant']] = (int)$row['absence'];
+foreach($absRaw as $row){
+    $absences[(int)$row['id_etudiant']] = (int)$row['nb'];
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Enseignant - Moyennes</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -133,7 +150,6 @@ foreach($suiviRaw as $row){
         <a href="absence.php" class="<?= $currentPage === 'absence.php' ? 'active' : '' ?>">Absences</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <div class="spacer"></div>
-        <a href="../index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 

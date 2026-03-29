@@ -15,7 +15,14 @@ if(isset($_GET['logout'])){
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 
-$stmtR = $pdo->prepare("SELECT nom_responsable, prenom_responsable, id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
+$stmtRespFilCol = $pdo->prepare("SELECT 1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='responsable' AND column_name='id_filiere' LIMIT 1");
+$stmtRespFilCol->execute();
+$hasResponsableFiliere = (bool)$stmtRespFilCol->fetchColumn();
+
+$stmtR = $pdo->prepare($hasResponsableFiliere
+    ? "SELECT nom_responsable, prenom_responsable, id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
+    : "SELECT nom_responsable, prenom_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
+);
 $stmtR->execute(['id'=>$_SESSION['id']]);
 $responsable = $stmtR->fetch(PDO::FETCH_ASSOC);
 
@@ -31,19 +38,24 @@ if($idNiveau !== null){
     $niveau = $stmtN->fetch(PDO::FETCH_ASSOC);
 }
 
+$filiereResponsable = null;
+$idFiliereResponsable = null;
+if($responsable && $responsable['id_filiere'] !== null){
+    $idFiliereResponsable = (int)$responsable['id_filiere'];
+}
+if($idFiliereResponsable !== null && $idFiliereResponsable > 0){
+    $stmtFR = $pdo->prepare("SELECT nom_filiere FROM filiere WHERE id_filiere=:id LIMIT 1");
+    $stmtFR->execute(['id'=>$idFiliereResponsable]);
+    $filiereResponsable = $stmtFR->fetch(PDO::FETCH_ASSOC);
+}
+
 $stmtC = $pdo->prepare("\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n");
 $stmtC->execute(['idNiveau'=>$idNiveau]);
 $classes = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 
 $nbClasses = is_array($classes) ? count($classes) : 0;
-$nbFilieres = 0;
 $nbEtudiants = 0;
 if($idNiveau !== null){
-    $stmtF = $pdo->prepare("SELECT COUNT(DISTINCT id_filiere) AS nb FROM classe WHERE id_niveau=:idNiveau");
-    $stmtF->execute(['idNiveau'=>$idNiveau]);
-    $rowF = $stmtF->fetch(PDO::FETCH_ASSOC);
-    $nbFilieres = $rowF ? (int)$rowF['nb'] : 0;
-
     $stmtE = $pdo->prepare("SELECT COUNT(*) AS nb FROM etudiant e JOIN classe c ON c.id_classe=e.id_classe WHERE c.id_niveau=:idNiveau");
     $stmtE->execute(['idNiveau'=>$idNiveau]);
     $rowE = $stmtE->fetch(PDO::FETCH_ASSOC);
@@ -54,6 +66,7 @@ if($idNiveau !== null){
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Responsable - Tableau de bord</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -89,11 +102,10 @@ if($idNiveau !== null){
 <div class="app-shell">
     <aside class="sidebar">
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <div class="spacer"></div>
-        <a href="../index.php">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 
@@ -108,11 +120,13 @@ if($idNiveau !== null){
                         <?php if($niveau): ?>
                             — <?= htmlspecialchars($niveau['libelle_niveau']) ?>
                         <?php endif; ?>
+                        <?php if($filiereResponsable && isset($filiereResponsable['nom_filiere'])): ?>
+                            — <?= htmlspecialchars((string)$filiereResponsable['nom_filiere']) ?>
+                        <?php endif; ?>
                     </p>
                 </div>
                 <div class="dash-actions">
                     <span class="dash-pill">Classes: <?= (int)$nbClasses ?></span>
-                    <span class="dash-pill">Filières: <?= (int)$nbFilieres ?></span>
                     <span class="dash-pill">Étudiants: <?= (int)$nbEtudiants ?></span>
                 </div>
             </div>
@@ -135,7 +149,15 @@ if($idNiveau !== null){
                                 <tbody>
                                     <?php foreach($classes as $c): ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($c['nom_classe']) ?></td>
+                                            <td>
+                                                <?php
+                                                    $desc = isset($c['description_classe']) ? trim((string)$c['description_classe']) : '';
+                                                    $base = $desc !== '' ? $desc : (string)$c['nom_classe'];
+                                                    $prefix = $niveau && isset($niveau['libelle_niveau']) ? trim((string)$niveau['libelle_niveau']) : '';
+                                                    $label = $prefix !== '' ? ($prefix.' — '.$base) : $base;
+                                                    echo htmlspecialchars($label);
+                                                ?>
+                                            </td>
                                             <td><?= htmlspecialchars($c['nom_filiere'] ?? '') ?></td>
                                             <td><a class="btn btn-primary" href="etudiant.php?id_classe=<?= (int)$c['id_classe'] ?>">Étudiants</a></td>
                                         </tr>
@@ -155,10 +177,6 @@ if($idNiveau !== null){
                                 <div class="value"><?= (int)$nbClasses ?></div>
                             </div>
                             <div class="stat">
-                                <div class="label">Filières</div>
-                                <div class="value"><?= (int)$nbFilieres ?></div>
-                            </div>
-                            <div class="stat">
                                 <div class="label">Étudiants</div>
                                 <div class="value"><?= (int)$nbEtudiants ?></div>
                             </div>
@@ -166,13 +184,18 @@ if($idNiveau !== null){
                                 <div class="label">Niveau</div>
                                 <div class="value"><?= htmlspecialchars($niveau ? $niveau['libelle_niveau'] : '-') ?></div>
                             </div>
+                            <?php if($filiereResponsable && isset($filiereResponsable['nom_filiere'])): ?>
+                            <div class="stat">
+                                <div class="label">Filière</div>
+                                <div class="value"><?= htmlspecialchars((string)$filiereResponsable['nom_filiere']) ?></div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="card">
                         <h2>Accès rapide</h2>
                         <div class="auth-actions">
-                            <a class="btn btn-secondary" href="filiere.php">Filières</a>
                             <a class="btn btn-secondary" href="classe.php">Classes</a>
                             <a class="btn btn-secondary" href="etudiant.php">Étudiants</a>
                             <a class="btn btn-secondary" href="notes.php">Notes</a>

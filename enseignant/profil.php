@@ -82,6 +82,7 @@ if(isset($_POST['enregistrer_profil'])){
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Enseignant - Profil</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -122,7 +123,6 @@ if(isset($_POST['enregistrer_profil'])){
         <a href="absence.php" class="<?= $currentPage === 'absence.php' ? 'active' : '' ?>">Absences</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <div class="spacer"></div>
-        <a href="../index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 

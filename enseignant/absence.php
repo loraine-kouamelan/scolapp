@@ -28,19 +28,35 @@ $stmtFil->execute(['idClasse'=>$idClasse]);
 $classeInfo = $stmtFil->fetch(PDO::FETCH_ASSOC);
 $idFiliereClasse = $classeInfo ? (int)$classeInfo['id_filiere'] : 0;
 
+$stmtCM = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='classe_matiere' LIMIT 1");
+$stmtCM->execute();
+$hasClasseMatiere = (bool)$stmtCM->fetchColumn();
+
 $stmtMatList = $pdo->prepare("
     SELECT m.*
     FROM matiere m
     JOIN enseignement en ON en.id_matiere=m.id_matiere
+    ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "")."
     WHERE m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
     ORDER BY m.nom_matiere
 ");
-$stmtMatList->execute(['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']]);
+$params = ['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']];
+if($hasClasseMatiere){
+    $params['idClasse'] = (int)$idClasse;
+}
+$stmtMatList->execute($params);
 $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 
 if(!$matieres){
-    $stmtMatList = $pdo->prepare("SELECT * FROM matiere WHERE id_filiere=:idFiliere ORDER BY nom_matiere");
-    $stmtMatList->execute(['idFiliere'=>$idFiliereClasse]);
+    $stmtMatList = $pdo->prepare(
+        "SELECT m.* FROM matiere m ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "").
+        "WHERE m.id_filiere=:idFiliere ORDER BY m.nom_matiere"
+    );
+    $params = ['idFiliere'=>$idFiliereClasse];
+    if($hasClasseMatiere){
+        $params['idClasse'] = (int)$idClasse;
+    }
+    $stmtMatList->execute($params);
     $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -70,6 +86,26 @@ if(isset($_POST['set_matiere'])){
     exit();
 }
 
+if(isset($_POST['supprimer_absence'])){
+    $idEt = isset($_POST['id_etudiant']) ? (int)$_POST['id_etudiant'] : 0;
+    if($idEt > 0){
+        $stmtChkEtu = $pdo->prepare("SELECT id_etudiant FROM etudiant WHERE id_etudiant=:idEtudiant AND id_classe=:idClasse LIMIT 1");
+        $stmtChkEtu->execute(['idEtudiant'=>$idEt, 'idClasse'=>$idClasse]);
+        $etuOk = $stmtChkEtu->fetch(PDO::FETCH_ASSOC);
+        if($etuOk){
+            $stmtLast = $pdo->prepare("SELECT a.id_absence FROM absence a WHERE a.id_etudiant=:idEtudiant AND a.id_matiere=:idMatiere ORDER BY a.date_absence DESC, a.id_absence DESC LIMIT 1");
+            $stmtLast->execute(['idEtudiant'=>$idEt, 'idMatiere'=>$idMatiere]);
+            $idAbs = (int)$stmtLast->fetchColumn();
+            if($idAbs > 0){
+                $stmtDel = $pdo->prepare("DELETE FROM absence WHERE id_absence=:id");
+                $stmtDel->execute(['id'=>$idAbs]);
+            }
+        }
+    }
+    header('Location: absence.php');
+    exit();
+}
+
 $stmtMat = $pdo->prepare("SELECT m.* FROM matiere m WHERE m.id_matiere=:idMatiere LIMIT 1");
 $stmtMat->execute(['idMatiere'=>$idMatiere]);
 $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
@@ -78,52 +114,48 @@ $stmtEtu = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudian
 $stmtEtu->execute(['idClasse'=>$idClasse]);
 $etudiants = $stmtEtu->fetchAll(PDO::FETCH_ASSOC);
 
-$stmtListe = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, s.absence
-    FROM etudiant e
-    LEFT JOIN suivi s ON s.id_etudiant=e.id_etudiant AND s.id_matiere=:idMatiere
-    WHERE e.id_classe=:idClasse
-    ORDER BY e.nom_etudiant, e.prenom_etudiant
-");
-$stmtListe->execute(['idClasse'=>$idClasse, 'idMatiere'=>$idMatiere]);
-$liste = $stmtListe->fetchAll(PDO::FETCH_ASSOC);
-
-$showAdd = isset($_GET['add']) && $_GET['add'] == '1';
-
-$stmtHistExists = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='absences_historique' LIMIT 1");
-$stmtHistExists->execute();
-$hasAbsHistorique = (bool)$stmtHistExists->fetchColumn();
-
-$absTextByEtudiant = [];
-if($hasAbsHistorique){
-    $stmtHist = $pdo->prepare("SELECT id_etudiant, GROUP_CONCAT(CONCAT(DATE_FORMAT(created_at, '%d/%m/%Y'), ': +', inc) ORDER BY created_at SEPARATOR '; ') AS abs_txt
-        FROM absences_historique
-        WHERE id_matiere=:idMatiere
-        GROUP BY id_etudiant
-    ");
-    $stmtHist->execute(['idMatiere'=>$idMatiere]);
-    $histRows = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
-    foreach($histRows as $r){
-        $absTextByEtudiant[(int)$r['id_etudiant']] = (string)$r['abs_txt'];
-    }
+$absencesByEtudiant = [];
+$maxAbsences = 0;
+foreach($etudiants as $e){
+    $eid = (int)$e['id_etudiant'];
+    $absencesByEtudiant[$eid] = [];
 }
 
-if(isset($_POST['enregistrer_absences'])){
-    $abs = isset($_POST['absences']) && is_array($_POST['absences']) ? $_POST['absences'] : [];
-
-    $stmtUpsert = $pdo->prepare("INSERT INTO suivi (id_etudiant, id_matiere, note, absence)
-        VALUES (:idEtudiant, :idMatiere, NULL, :inc)
-        ON DUPLICATE KEY UPDATE absence=absence+VALUES(absence)
-    ");
-    $stmtHistIns = null;
-    if($hasAbsHistorique){
-        $stmtHistIns = $pdo->prepare("INSERT INTO absences_historique (id_etudiant, id_matiere, inc) VALUES (:idEtudiant, :idMatiere, :inc)");
+$stmtAbs = $pdo->prepare("
+    SELECT a.id_etudiant, a.date_absence, a.justifier
+    FROM absence a
+    JOIN etudiant e ON e.id_etudiant=a.id_etudiant
+    WHERE e.id_classe=:idClasse AND a.id_matiere=:idMatiere
+    ORDER BY a.date_absence ASC, a.id_absence ASC
+");
+$stmtAbs->execute(['idClasse'=>$idClasse, 'idMatiere'=>$idMatiere]);
+$absRows = $stmtAbs->fetchAll(PDO::FETCH_ASSOC);
+foreach($absRows as $r){
+    $eid = (int)$r['id_etudiant'];
+    if(!isset($absencesByEtudiant[$eid])){
+        $absencesByEtudiant[$eid] = [];
     }
+    $absencesByEtudiant[$eid][] = [
+        'date_absence' => (string)$r['date_absence'],
+        'justifier' => (int)($r['justifier'] ?? 0)
+    ];
+}
+
+foreach($absencesByEtudiant as $eid => $arr){
+    $maxAbsences = max($maxAbsences, is_array($arr) ? count($arr) : 0);
+}
+
+if(isset($_POST['ajouter_absences'])){
+    $datesNew = isset($_POST['abs_date']) && is_array($_POST['abs_date']) ? $_POST['abs_date'] : [];
+    $justNew = isset($_POST['abs_just']) && is_array($_POST['abs_just']) ? $_POST['abs_just'] : [];
+
+    $stmtIns = $pdo->prepare("INSERT INTO absence (date_absence, justifier, id_etudiant, id_matiere) VALUES (:dateAbsence, :justifier, :idEtudiant, :idMatiere)");
     $stmtChkEtu = $pdo->prepare("SELECT id_etudiant FROM etudiant WHERE id_etudiant=:idEtudiant AND id_classe=:idClasse LIMIT 1");
 
-    foreach($abs as $idEt => $inc){
+    foreach($datesNew as $idEt => $dateAbs){
         $idEt = (int)$idEt;
-        $inc = (int)$inc;
-        if($idEt <= 0 || $inc <= 0){
+        $dateAbs = trim((string)$dateAbs);
+        if($idEt <= 0 || $dateAbs === ''){
             continue;
         }
         $stmtChkEtu->execute(['idEtudiant'=>$idEt, 'idClasse'=>$idClasse]);
@@ -131,17 +163,13 @@ if(isset($_POST['enregistrer_absences'])){
         if(!$etuOk){
             continue;
         }
-        if($stmtHistIns){
-            $stmtHistIns->execute([
-                'idEtudiant'=>$idEt,
-                'idMatiere'=>$idMatiere,
-                'inc'=>$inc
-            ]);
-        }
-        $stmtUpsert->execute([
+
+        $just = isset($justNew[$idEt]) && (string)$justNew[$idEt] === '1' ? 1 : 0;
+        $stmtIns->execute([
+            'dateAbsence'=>$dateAbs,
+            'justifier'=>$just,
             'idEtudiant'=>$idEt,
-            'idMatiere'=>$idMatiere,
-            'inc'=>$inc
+            'idMatiere'=>$idMatiere
         ]);
     }
 
@@ -154,6 +182,7 @@ if(isset($_POST['enregistrer_absences'])){
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Enseignant - Absences</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -193,7 +222,6 @@ if(isset($_POST['enregistrer_absences'])){
         <a href="absence.php" class="<?= $currentPage === 'absence.php' ? 'active' : '' ?>">Absences</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <div class="spacer"></div>
-        <a href="../index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 
@@ -213,84 +241,79 @@ if(isset($_POST['enregistrer_absences'])){
                             <?php endforeach; ?>
                         </select>
                         <a class="btn btn-secondary" href="selection.php?reset=1">Modifier</a>
-                        <?php if(!$showAdd): ?>
-                            <a class="btn btn-primary" href="absence.php?add=1">Ajouter</a>
-                        <?php else: ?>
-                            <a class="btn btn-secondary" href="absence.php">Liste</a>
-                        <?php endif; ?>
                     </form>
                 </div>
             </div>
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php if(!$showAdd): ?>
                     <div class="card">
                         <h2>Liste des absences</h2>
-                        <div style="overflow:auto;">
-                            <table class="table" style="min-width:640px; width:100%;">
-                                <thead>
-                                    <tr>
-                                        <th>Étudiant</th>
-                                        <th style="width:160px;">Absences</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach($liste as $r): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($r['nom_etudiant'].' '.$r['prenom_etudiant']) ?></td>
-                                            <td>
-                                                <?php
-                                                    $txt = $hasAbsHistorique ? ($absTextByEtudiant[(int)$r['id_etudiant']] ?? '') : '';
-                                                    $total = ($r['absence'] === null || $r['absence'] === '') ? '0' : (string)$r['absence'];
-                                                    if($txt !== ''){
-                                                        echo htmlspecialchars($txt.' (Total: '.$total.')');
-                                                    } else {
-                                                        echo htmlspecialchars($total);
-                                                    }
-                                                ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="auth-actions" style="justify-content:flex-end; margin-top:12px;">
-                            <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <?php if($showAdd): ?>
-                    <div class="card" style="margin-top:16px;">
-                        <h2>Ajouter plusieurs absences</h2>
-                        <form method="post">
-                            <div>
-                                <table class="table" style="width:100%; table-layout:fixed;">
+                        <div>
+                            <table class="table" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th>Étudiant</th>
-                                            <th style="width:140px;">+Absences</th>
+                                            <th>Nom</th>
+                                            <th>Prénom</th>
+                                            <?php for($i=1; $i<=$maxAbsences; $i++): ?>
+                                                <th style="width:140px;">Absence <?= (int)$i ?></th>
+                                            <?php endfor; ?>
+                                            <th style="width:170px;">Date</th>
+                                            <th style="width:140px;">Justifiée</th>
+                                            <th style="width:220px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach($liste as $r): ?>
+                                        <?php foreach($etudiants as $e): ?>
+                                            <?php $eid = (int)$e['id_etudiant']; ?>
                                             <tr>
-                                                <td><?= htmlspecialchars($r['nom_etudiant'].' '.$r['prenom_etudiant']) ?></td>
+                                                <td><?= htmlspecialchars((string)$e['nom_etudiant']) ?></td>
+                                                <td><?= htmlspecialchars((string)$e['prenom_etudiant']) ?></td>
+                                                <?php $arr = $absencesByEtudiant[$eid] ?? []; ?>
+                                                <?php for($i=0; $i<$maxAbsences; $i++): ?>
+                                                    <?php
+                                                        $a = isset($arr[$i]) ? $arr[$i] : null;
+                                                        $isJust = $a ? ((int)$a['justifier'] === 1) : 0;
+                                                        $bg = $a ? ($isJust ? '#d1fae5' : '#fee2e2') : 'transparent';
+                                                        $color = $a ? ($isJust ? '#065f46' : '#991b1b') : 'inherit';
+                                                        $dateTxt = $a ? (string)$a['date_absence'] : '';
+                                                    ?>
+                                                    <td>
+                                                        <?php if($a): ?>
+                                                            <span style="display:inline-block; padding:6px 10px; border-radius:999px; background:<?= htmlspecialchars($bg) ?>; color:<?= htmlspecialchars($color) ?>; font-weight:600;">
+                                                                <?= htmlspecialchars($dateTxt) ?>
+                                                            </span>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </td>
+                                                <?php endfor; ?>
+                                                <?php $formId = 'absRow'.$eid; ?>
                                                 <td>
-                                                    <input type="number" min="0" step="1" name="absences[<?= (int)$r['id_etudiant'] ?>]" value="0" style="width:100%;" />
+                                                    <input type="date" name="abs_date[<?= (int)$eid ?>]" form="<?= htmlspecialchars($formId) ?>" value="" style="width:100%;" />
+                                                </td>
+                                                <td>
+                                                    <select name="abs_just[<?= (int)$eid ?>]" form="<?= htmlspecialchars($formId) ?>" style="width:100%;">
+                                                        <option value="0" selected>Non</option>
+                                                        <option value="1">Oui</option>
+                                                    </select>
+                                                </td>
+                                                <td style="white-space:nowrap;">
+                                                    <form method="post" id="<?= htmlspecialchars($formId) ?>" style="display:inline-flex; gap:10px; align-items:center;">
+                                                        <input type="hidden" name="id_etudiant" value="<?= (int)$eid ?>">
+                                                        <button class="btn btn-primary" name="ajouter_absences" type="submit">Enregistrer</button>
+                                                        <button class="btn btn-danger" name="supprimer_absence" type="submit" onclick="return confirm('Supprimer la dernière absence de cet étudiant ?');">Supprimer</button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
-                            </div>
-                            <div class="auth-actions" style="margin-top:12px;">
-                                <button class="btn btn-primary" name="enregistrer_absences" type="submit">Enregistrer tout</button>
-                            </div>
-                        </form>
+                        </div>
+                        <div class="auth-actions" style="justify-content:flex-end; margin-top:12px;">
+                            <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
+                        </div>
                     </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

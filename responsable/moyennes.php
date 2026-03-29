@@ -15,44 +15,66 @@ if(isset($_GET['logout'])){
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 
+$showResults = true;
+
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
+$idFiliereResp = isset($_SESSION['id_filiere']) ? (int)$_SESSION['id_filiere'] : 0;
 if($idNiveau <= 0){
-    $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
+    $stmtN = $pdo->prepare("SELECT id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
     $stmtN->execute(['id'=>$_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
+    $idFiliereResp = $r && $r['id_filiere'] !== null ? (int)$r['id_filiere'] : 0;
     $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
+    $_SESSION['id_filiere'] = $idFiliereResp > 0 ? $idFiliereResp : null;
+}
+
+$libelleNiveau = '';
+if($idNiveau > 0){
+    $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
+    $stmtLib->execute(['id'=>$idNiveau]);
+    $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
+    $libelleNiveau = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
 }
 
 $stmtMoyennes = $pdo->prepare("
     SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant,
+           c.id_classe,
            c.nom_classe AS classe,
+           c.description_classe,
            f.nom_filiere AS filiere,
-           AVG(s.note) AS moyenne_generale
+           AVG(n.note) AS moyenne_generale
     FROM etudiant e
     JOIN classe c ON e.id_classe=c.id_classe
     LEFT JOIN filiere f ON f.id_filiere=c.id_filiere
-    LEFT JOIN suivi s ON s.id_etudiant=e.id_etudiant
-    WHERE c.id_niveau=:idNiveau
+    LEFT JOIN notes n ON n.id_etudiant=e.id_etudiant
+    WHERE c.id_niveau=:idNiveau".($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "")."
     GROUP BY e.id_etudiant
-    ORDER BY f.nom_filiere, c.nom_classe, e.nom_etudiant, e.prenom_etudiant
+    ORDER BY c.nom_classe, e.nom_etudiant, e.prenom_etudiant
 ");
-$stmtMoyennes->execute(['idNiveau'=>$idNiveau]);
+$params = ['idNiveau'=>$idNiveau];
+if($idFiliereResp > 0){
+    $params['idFiliere'] = $idFiliereResp;
+}
+$stmtMoyennes->execute($params);
 $notesMoyennes = $stmtMoyennes->fetchAll(PDO::FETCH_ASSOC);
 
-$moyennesParFiliere = [];
+$moyennesParClasse = [];
 foreach($notesMoyennes as $row){
-    $f = isset($row['filiere']) && $row['filiere'] !== null ? (string)$row['filiere'] : 'Sans filière';
-    if(!isset($moyennesParFiliere[$f])){
-        $moyennesParFiliere[$f] = [];
+    $desc = isset($row['description_classe']) ? trim((string)$row['description_classe']) : '';
+    $base = $desc !== '' ? $desc : (string)($row['classe'] ?? '');
+    $label = $libelleNiveau !== '' ? ($libelleNiveau.' — '.$base) : $base;
+    if(!isset($moyennesParClasse[$label])){
+        $moyennesParClasse[$label] = [];
     }
-    $moyennesParFiliere[$f][] = $row;
+    $moyennesParClasse[$label][] = $row;
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Responsable - Moyennes</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -88,11 +110,10 @@ foreach($notesMoyennes as $row){
 <div class="app-shell">
     <aside class="sidebar">
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
         <div class="spacer"></div>
-        <a href="../index.php">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 
@@ -101,7 +122,7 @@ foreach($notesMoyennes as $row){
             <div class="dash-topbar">
                 <div class="dash-title">
                     <h1>Moyennes</h1>
-                    <p>Moyennes par filière (niveau automatiquement appliqué)</p>
+                    <p>Moyennes par classe </p>
                 </div>
                 <div class="dash-actions">
                     <span class="dash-pill">Total: <?= is_array($notesMoyennes) ? count($notesMoyennes) : 0 ?></span>
@@ -111,18 +132,21 @@ foreach($notesMoyennes as $row){
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php foreach($moyennesParFiliere as $nomFiliere => $rows): ?>
-                        <div class="card" style="margin-bottom:16px;">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                                <h2 style="margin:0;">Filière : <?= htmlspecialchars($nomFiliere) ?></h2>
-                                <span class="dash-pill">Étudiants: <?= count($rows) ?></span>
-                            </div>
+                    <div class="card">
+                        <?php foreach($moyennesParClasse as $nomClasse => $rows): ?>
+                            <details style="margin-top:12px;">
+                                <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
+                                    <span><strong>Classe : <?= htmlspecialchars($nomClasse) ?></strong></span>
+                                    <span style="display:flex; align-items:center; gap:10px;">
+                                        <span class="dash-pill">Étudiants: <?= count($rows) ?></span>
+                                        <span class="btn btn-secondary" style="pointer-events:none;">Voir</span>
+                                    </span>
+                                </summary>
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Nom</th>
                                         <th>Prénom</th>
-                                        <th>Classe</th>
                                         <th>Moyenne générale</th>
                                     </tr>
                                 </thead>
@@ -131,14 +155,14 @@ foreach($notesMoyennes as $row){
                                         <tr>
                                             <td><?= htmlspecialchars($n['nom_etudiant']) ?></td>
                                             <td><?= htmlspecialchars($n['prenom_etudiant']) ?></td>
-                                            <td><?= htmlspecialchars($n['classe'] ?? '') ?></td>
                                             <td><?= $n['moyenne_generale'] !== null ? round($n['moyenne_generale'],2) : '' ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
-                        </div>
-                    <?php endforeach; ?>
+                            </details>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         </div>

@@ -16,7 +16,7 @@ $isLogged = isset($_SESSION['id'], $_SESSION['role']);
 $dashboardUrl = 'roles.php';
 if($isLogged){
     if($_SESSION['role'] === 'RESPONSABLE'){
-        $dashboardUrl = 'pricipal/tb_principal.php';
+        $dashboardUrl = 'responsable/tb_principal.php';
     } elseif($_SESSION['role'] === 'ENSEIGNANT'){
         $dashboardUrl = 'enseignant/selection.php';
     }
@@ -27,7 +27,7 @@ if($isLogged){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScolApp</title>
+<title>ScolApp - Accueil</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="landing-body">
@@ -56,7 +56,7 @@ if($isLogged){
     <section class="landing-hero">
         <div class="landing-hero-content">
             <h1>Gérez votre établissement avec <span class="landing-accent">ScolApp</span>.</h1>
-            <p>Une plateforme simple et moderne pour le suivi des étudiants, des notes, des moyennes et des absences.</p>
+            <p>Une plateforme simple et moderne pour la gestion des étudiants, des notes, des moyennes et des absences.</p>
             <div class="landing-hero-cta">
                 <a class="btn btn-primary" href="<?= htmlspecialchars($isLogged ? $dashboardUrl : 'roles.php') ?>"><?= $isLogged ? 'Continuer' : 'Commencer' ?></a>
                 <a class="btn btn-secondary" href="#features">Découvrir</a>
@@ -67,11 +67,11 @@ if($isLogged){
             <div class="landing-card">
                 <div class="landing-card-head">
                     <span class="landing-pill">Tableau de bord</span>
-                    <span class="landing-pill">Suivi</span>
+                    <span class="landing-pill">Gestion</span>
                 </div>
                 <div class="landing-card-body">
                     <div class="landing-stat">
-                        <div class="landing-stat-label">Classes</div>
+                        <div class="landing-stat-label">Filières</div>
                         <div class="landing-stat-value">12</div>
                     </div>
                     <div class="landing-stat">
@@ -106,7 +106,7 @@ if($isLogged){
             <div class="landing-feature">
                 <div class="landing-feature-icon">✅</div>
                 <h3>Absences</h3>
-                <p>Suivi des absences et accès simplifié pour les enseignants.</p>
+                <p>Gestion des absences et accès simplifié pour les enseignants.</p>
             </div>
         </div>
     </section>

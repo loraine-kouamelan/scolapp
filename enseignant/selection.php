@@ -59,6 +59,10 @@ if($idFiliere){
 
 $matieres = [];
 if($idClasse){
+    $stmtCM = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='classe_matiere' LIMIT 1");
+    $stmtCM->execute();
+    $hasClasseMatiere = (bool)$stmtCM->fetchColumn();
+
     $stmtClasse = $pdo->prepare("SELECT id_filiere FROM classe WHERE id_classe=:idClasse LIMIT 1");
     $stmtClasse->execute(['idClasse'=>$idClasse]);
     $classeInfo = $stmtClasse->fetch(PDO::FETCH_ASSOC);
@@ -68,15 +72,27 @@ if($idClasse){
         SELECT m.*
         FROM matiere m
         JOIN enseignement en ON en.id_matiere=m.id_matiere
+        ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "")."
         WHERE m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
         ORDER BY m.nom_matiere
     ");
-    $stmt->execute(['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']]);
+    $params = ['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']];
+    if($hasClasseMatiere){
+        $params['idClasse'] = (int)$idClasse;
+    }
+    $stmt->execute($params);
     $matieres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if(!$matieres){
-        $stmt = $pdo->prepare("SELECT * FROM matiere WHERE id_filiere=:idFiliere ORDER BY nom_matiere");
-        $stmt->execute(['idFiliere'=>$idFiliereClasse]);
+        $stmt = $pdo->prepare(
+            "SELECT m.* FROM matiere m ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "").
+            "WHERE m.id_filiere=:idFiliere ORDER BY m.nom_matiere"
+        );
+        $params = ['idFiliere'=>$idFiliereClasse];
+        if($hasClasseMatiere){
+            $params['idClasse'] = (int)$idClasse;
+        }
+        $stmt->execute($params);
         $matieres = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
@@ -113,30 +129,17 @@ if($idMatiere){
 
 $notesParEtudiant = '-';
 if($idClasse && $idMatiere){
-    try{
-        $stmt = $pdo->query("SHOW TABLES LIKE 'notes_historique'");
-        $hasHistorique = $stmt && $stmt->fetch();
-    }catch(Exception $e){
-        $hasHistorique = false;
-    }
-
-    if($hasHistorique){
-        $stmtMaxNotes = $pdo->prepare("\n            SELECT COALESCE(MAX(t.cnt), 0) AS nb\n            FROM (\n                SELECT nh.id_etudiant, COUNT(*) AS cnt\n                FROM notes_historique nh\n                JOIN etudiant e ON e.id_etudiant=nh.id_etudiant\n                WHERE e.id_classe=:idClasse AND nh.id_matiere=:idMatiere\n                GROUP BY nh.id_etudiant\n            ) t\n        ");
-        $stmtMaxNotes->execute(['idClasse'=>(int)$idClasse, 'idMatiere'=>(int)$idMatiere]);
-        $rowNotes = $stmtMaxNotes->fetch(PDO::FETCH_ASSOC);
-        $notesParEtudiant = $rowNotes ? (string)(int)$rowNotes['nb'] : '0';
-    }else{
-        $stmtMaxNotes = $pdo->prepare("\n            SELECT COALESCE(MAX(CASE WHEN s.note IS NOT NULL THEN 1 ELSE 0 END), 0) AS nb\n            FROM etudiant e\n            LEFT JOIN suivi s ON s.id_etudiant=e.id_etudiant AND s.id_matiere=:idMatiere\n            WHERE e.id_classe=:idClasse\n        ");
-        $stmtMaxNotes->execute(['idClasse'=>(int)$idClasse, 'idMatiere'=>(int)$idMatiere]);
-        $rowNotes = $stmtMaxNotes->fetch(PDO::FETCH_ASSOC);
-        $notesParEtudiant = $rowNotes ? (string)(int)$rowNotes['nb'] : '0';
-    }
+    $stmtMaxNotes = $pdo->prepare("\n        SELECT COALESCE(MAX(t.cnt), 0) AS nb\n        FROM (\n            SELECT n.id_etudiant, COUNT(*) AS cnt\n            FROM notes n\n            JOIN etudiant e ON e.id_etudiant=n.id_etudiant\n            WHERE e.id_classe=:idClasse AND n.id_matiere=:idMatiere\n            GROUP BY n.id_etudiant\n        ) t\n    ");
+    $stmtMaxNotes->execute(['idClasse'=>(int)$idClasse, 'idMatiere'=>(int)$idMatiere]);
+    $rowNotes = $stmtMaxNotes->fetch(PDO::FETCH_ASSOC);
+    $notesParEtudiant = $rowNotes ? (string)(int)$rowNotes['nb'] : '0';
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScolApp - Enseignant - Tableau de bord</title>
 <link rel="stylesheet" href="../style.css">
 </head>
@@ -176,7 +179,6 @@ if($idClasse && $idMatiere){
         <a href="absence.php" class="<?= $currentPage === 'absence.php' ? 'active' : '' ?>">Absences</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <div class="spacer"></div>
-        <a href="../index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">Accueil</a>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
 

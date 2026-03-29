@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Accueil - ScolApp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ScolApp - Choix du rôle</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,8 +14,8 @@
     <h2>Choisissez votre rôle :</h2>
     <div class="user-card">
         <h2>Responsable</h2>
-        <p>gérez les filières, classes et suivi.</p>
-        <a href="pricipal/connexion_principal.php">se connecter</a>
+        <p>gérez les filières, classes et gestion.</p>
+        <a href="responsable/connexion_principal.php">se connecter</a>
     </div>
     <div class="user-card">
         <h2>Enseignant</h2>
