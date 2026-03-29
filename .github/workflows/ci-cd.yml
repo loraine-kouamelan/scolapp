@@ -1,4 +1,4 @@
-name: CI/CD PHP Web App
+name: CI/CD Application PHP
 
 on:
   push:
@@ -6,18 +6,22 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  construction-et-deploiement:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout
+      - name: Récupération du code
         uses: actions/checkout@v3
 
-      - name: Vérifier PHP
-        run: C:\wamp64\bin\php\php8.0.30\php.exe -v
+      - name: Vérification de PHP
+        run: |
+          C:\wamp64\bin\php\php8.0.30\php.exe -v
 
-      - name: Déployer vers WAMP
-        run: xcopy /E /I /Y * "C:\wamp64\www\memoire\"
+      - name: Déploiement vers WAMP
+        run: |
+          echo "Déploiement en cours..."
+          xcopy /E /I /Y * "C:\wamp64\www\memoire\"
+          echo "Fichiers copiés"
 
       - name: Fin
-        run: echo "Déploiement terminé ✅"
+        run: echo "Déploiement terminé"
