@@ -280,7 +280,7 @@ foreach($etudiants as $e){
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètre</a>
         <div class="spacer"></div>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
@@ -361,32 +361,34 @@ foreach($etudiants as $e){
                                 $liste = isset($etudiantsParClasse[$idClasseFiltre]) ? $etudiantsParClasse[$idClasseFiltre] : [];
                             ?>
                             <h3 style="margin-top:10px;">Classe : <?= htmlspecialchars($labelClasse) ?></h3>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Matricule</th>
-                                        <th>Nom</th>
-                                        <th>Prénom</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach($liste as $e): ?>
+                            <div class="table-scroll">
+                                <table>
+                                    <thead>
                                         <tr>
-                                            <td><?= htmlspecialchars($e['matricule']) ?></td>
-                                            <td><?= htmlspecialchars($e['nom_etudiant'] ?? '') ?></td>
-                                            <td><?= htmlspecialchars($e['prenom_etudiant'] ?? '') ?></td>
-                                            <td>
-                                                <a class="btn btn-secondary" href="etudiant.php?edit=<?= (int)$e['id_etudiant'] ?>">Modifier</a>
-                                                <form method="post" style="display:inline-block;" onsubmit="return confirm('Supprimer cet étudiant ?');">
-                                                    <input type="hidden" name="id_etudiant" value="<?= (int)$e['id_etudiant'] ?>">
-                                                    <button class="btn btn-danger" name="supprimer_etudiant" type="submit">Supprimer</button>
-                                                </form>
-                                            </td>
+                                            <th>Matricule</th>
+                                            <th>Nom</th>
+                                            <th>Prénom</th>
+                                            <th>Actions</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($liste as $e): ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($e['matricule']) ?></td>
+                                                <td><?= htmlspecialchars($e['nom_etudiant'] ?? '') ?></td>
+                                                <td><?= htmlspecialchars($e['prenom_etudiant'] ?? '') ?></td>
+                                                <td>
+                                                    <a class="btn btn-secondary" href="etudiant.php?edit=<?= (int)$e['id_etudiant'] ?>">Modifier</a>
+                                                    <form method="post" style="display:inline-block;" onsubmit="return confirm('Supprimer cet étudiant ?');">
+                                                        <input type="hidden" name="id_etudiant" value="<?= (int)$e['id_etudiant'] ?>">
+                                                        <button class="btn btn-danger" name="supprimer_etudiant" type="submit">Supprimer</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
 
                             <div class="auth-actions" style="margin-top:12px;">
                                 <a class="btn btn-secondary" href="etudiant.php">Fermer</a>

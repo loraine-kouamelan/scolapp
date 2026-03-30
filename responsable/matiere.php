@@ -318,7 +318,7 @@ if(is_array($matieres)){
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètre</a>
         <div class="spacer"></div>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
@@ -406,7 +406,7 @@ if(is_array($matieres)){
                             <details style="margin-top:12px;">
                                 <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
                                     <span><strong><?= htmlspecialchars($labelClasse) ?></strong></span>
-                                    <span class="btn btn-secondary" style="padding:8px 12px;">Voir (<?= count($items) ?>)</span>
+                                    <span class="btn btn-secondary" data-details-label style="padding:8px 12px;">Voir</span>
                                 </summary>
                                 <div style="margin-top:10px;">
                                     <?php if(empty($items)): ?>

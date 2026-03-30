@@ -94,17 +94,17 @@ if($isLogged){
         </div>
         <div class="landing-features">
             <div class="landing-feature">
-                <div class="landing-feature-icon">📚</div>
+                <div class="landing-feature-icon">1</div>
                 <h3>Gestion</h3>
                 <p>Filières, classes, matières, étudiants — tout au même endroit.</p>
             </div>
             <div class="landing-feature">
-                <div class="landing-feature-icon">📊</div>
+                <div class="landing-feature-icon">2</div>
                 <h3>Notes & Moyennes</h3>
                 <p>Calcul et consultation rapides, filtrés automatiquement selon le niveau.</p>
             </div>
             <div class="landing-feature">
-                <div class="landing-feature-icon">✅</div>
+                <div class="landing-feature-icon">3</div>
                 <h3>Absences</h3>
                 <p>Gestion des absences et accès simplifié pour les enseignants.</p>
             </div>

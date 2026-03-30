@@ -128,7 +128,7 @@ if(isset($_POST['enregistrer_profil'])){
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètre</a>
         <div class="spacer"></div>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
@@ -141,6 +141,7 @@ if(isset($_POST['enregistrer_profil'])){
                     <p>Modifier vos informations</p>
                 </div>
                 <div class="dash-actions">
+                    <a class="btn btn-secondary" href="tb_principal.php">Fermer</a>
                     <span class="dash-pill"><?= htmlspecialchars($niveauLibelle !== '' ? $niveauLibelle : 'Niveau') ?></span>
                 </div>
             </div>

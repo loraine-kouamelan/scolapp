@@ -15,8 +15,6 @@ if(!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])){
 $idClasse = $_SESSION['idClasse'];
 $idMatiere = $_SESSION['idMatiere'];
 
-$showResults = isset($_GET['view']) && $_GET['view'] == '1';
-
 if(isset($_GET['logout'])){
     session_destroy();
     header("Location: ../index.php");
@@ -68,7 +66,7 @@ if(isset($_POST['set_matiere'])){
             $idMatiere = $newId;
         }
     }
-    header('Location: moyennes.php'.($showResults ? '?view=1' : ''));
+    header('Location: moyennes.php');
     exit();
 }
 
@@ -169,20 +167,13 @@ foreach($absRaw as $row){
                             <?php endforeach; ?>
                         </select>
                         <a class="btn btn-secondary" href="selection.php?reset=1">Modifier</a>
-                        <?php if(!$showResults): ?>
-                            <a class="btn btn-primary" href="moyennes.php?view=1">Voir</a>
-                        <?php else: ?>
-                            <a class="btn btn-secondary" href="moyennes.php">Masquer</a>
-                        <?php endif; ?>
                     </form>
                 </div>
             </div>
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php if($showResults): ?>
                     <div class="card">
-                        <h2>Résultats</h2>
                         <table>
                             <thead>
                                 <tr>
@@ -208,12 +199,6 @@ foreach($absRaw as $row){
                             <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
                         </div>
                     </div>
-                    <?php else: ?>
-                    <div class="card">
-                        <h2>Résultats</h2>
-                        <p>Clique sur "Voir" pour afficher la liste.</p>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

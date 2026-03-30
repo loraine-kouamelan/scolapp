@@ -186,7 +186,7 @@ if($idClasse && $idMatiere){
         <div class="container">
             <div class="dash-topbar">
                 <div class="dash-title">
-                    <h1>Dashboard</h1>
+                    <h1>Tableau de bord</h1>
                     <p>Choisis la filière, la classe et la matière.</p>
                 </div>
                 <div class="dash-actions">

@@ -133,6 +133,9 @@ if(isset($_POST['enregistrer_profil'])){
                     <h1>Profil</h1>
                     <p>Modifier vos informations</p>
                 </div>
+                <div class="dash-actions">
+                    <a class="btn btn-secondary" href="selection.php">Fermer</a>
+                </div>
             </div>
 
             <?php if($message !== ''): ?>

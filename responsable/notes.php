@@ -261,7 +261,7 @@ if($idClasse){
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètre</a>
         <div class="spacer"></div>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
@@ -328,38 +328,42 @@ if($idClasse){
 
                     <?php if($showNotesList): ?>
                     <div class="card">
-                        <h2>Liste des notes par matière</h2>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                            <h2 style="margin:0;">Liste des notes </h2>
+                            <button class="btn btn-secondary" type="button" onclick="printSection('print-notes', 'Liste des notes')">Imprimer</button>
+                        </div>
                         <?php if($idClasse && $idMatiere): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nom</th>
-                                    <th>Prénom</th>
-                                    <?php for($i=1; $i<=$maxNotes; $i++): ?>
-                                        <th>Note <?= (int)$i ?></th>
-                                    <?php endfor; ?>
-                                    <th>Moyenne</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($etudiantsNotes as $e): ?>
-                                    <?php $eid = (int)$e['id_etudiant']; ?>
+                        <div id="print-notes">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td><?= htmlspecialchars((string)$e['nom']) ?></td>
-                                        <td><?= htmlspecialchars((string)$e['prenom']) ?></td>
-                                        <?php $arr = $notesByEtudiant[$eid] ?? []; ?>
-                                        <?php for($i=0; $i<$maxNotes; $i++): ?>
-                                            <?php $v = isset($arr[$i]) ? $arr[$i] : null; ?>
-                                            <td><?= $v !== null ? round((float)$v,2) : '-' ?></td>
+                                        <th>Nom</th>
+                                        <th>Prénom</th>
+                                        <?php for($i=1; $i<=$maxNotes; $i++): ?>
+                                            <th>Note <?= (int)$i ?></th>
                                         <?php endfor; ?>
-                                        <?php $mg = $moyenneByEtudiant[$eid] ?? null; ?>
-                                        <td><?= $mg !== null ? round((float)$mg,2) : '-' ?></td>
+                                        <th>Moyenne</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                        <div class="auth-actions" style="justify-content:flex-end; margin-top:12px;">
-                            <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
+                                </thead>
+                                <tbody>
+                                    <?php foreach($etudiantsNotes as $e): ?>
+                                        <?php $eid = (int)$e['id_etudiant']; ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars((string)$e['nom']) ?></td>
+                                            <td><?= htmlspecialchars((string)$e['prenom']) ?></td>
+                                            <?php $arr = $notesByEtudiant[$eid] ?? []; ?>
+                                            <?php for($i=0; $i<$maxNotes; $i++): ?>
+                                                <?php $v = isset($arr[$i]) ? $arr[$i] : null; ?>
+                                                <td><?= $v !== null ? round((float)$v,2) : '-' ?></td>
+                                            <?php endfor; ?>
+                                            <?php $mg = $moyenneByEtudiant[$eid] ?? null; ?>
+                                            <td><?= $mg !== null ? round((float)$mg,2) : '-' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                         </div>
                         <?php else: ?>
                             <p>Choisis une classe et une matière.</p>
@@ -370,34 +374,41 @@ if($idClasse){
 
                     <?php if($showResultatsList): ?>
                     <div class="card">
-                        <h2>Résultats (toutes les matières)</h2>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                            <h2 style="margin:0;">Résultats (toutes les matières)</h2>
+                            <button class="btn btn-secondary" type="button" onclick="printSection('print-resultats', 'Résultats')">Imprimer</button>
+                        </div>
                         <?php if($idClasse): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nom</th>
-                                    <th>Prénom</th>
-                                    <?php foreach($matieresResultats as $m): ?>
-                                        <th><?= htmlspecialchars((string)$m['nom_matiere']) ?></th>
-                                    <?php endforeach; ?>
-                                    <th>Moyenne générale</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($resultatsPivot as $idEtudiant => $r): ?>
+                        <div id="print-resultats">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td><?= htmlspecialchars($r['nom']) ?></td>
-                                        <td><?= htmlspecialchars($r['prenom']) ?></td>
+                                        <th>Nom</th>
+                                        <th>Prénom</th>
                                         <?php foreach($matieresResultats as $m): ?>
-                                            <?php $val = $r['matieres'][(string)$m['nom_matiere']] ?? null; ?>
-                                            <td><?= $val !== null ? round($val,2) : '' ?></td>
+                                            <th><?= htmlspecialchars((string)$m['nom_matiere']) ?></th>
                                         <?php endforeach; ?>
-                                        <?php $mg = $moyennesGeneralesById[(int)$idEtudiant] ?? null; ?>
-                                        <td><?= $mg !== null ? round($mg,2) : '' ?></td>
+                                        <th>Moyenne générale</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach($resultatsPivot as $idEtudiant => $r): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($r['nom']) ?></td>
+                                            <td><?= htmlspecialchars($r['prenom']) ?></td>
+                                            <?php foreach($matieresResultats as $m): ?>
+                                                <?php $val = $r['matieres'][(string)$m['nom_matiere']] ?? null; ?>
+                                                <td><?= $val !== null ? round($val,2) : '' ?></td>
+                                            <?php endforeach; ?>
+                                            <?php $mg = $moyennesGeneralesById[(int)$idEtudiant] ?? null; ?>
+                                            <td><?= $mg !== null ? round($mg,2) : '' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        </div>
                         <?php else: ?>
                             <p>Choisis une classe.</p>
                         <?php endif; ?>
@@ -410,5 +421,35 @@ if($idClasse){
     </main>
 </div>
 <script src="../app.js"></script>
+<script>
+function printSection(sectionId, title){
+    var el = document.getElementById(sectionId);
+    if(!el){
+        window.print();
+        return;
+    }
+    var w = window.open('', '_blank');
+    if(!w){
+        window.print();
+        return;
+    }
+    var cssHref = '../style.css';
+    w.document.open();
+    w.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8">');
+    w.document.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    w.document.write('<title>'+String(title || 'Impression')+'</title>');
+    w.document.write('<link rel="stylesheet" href="'+cssHref+'">');
+    w.document.write('<style>@media print{.table-scroll{overflow:visible!important} .table-scroll table{width:100%!important;min-width:0!important}}</style>');
+    w.document.write('</head><body>');
+    w.document.write(el.innerHTML);
+    w.document.write('</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(function(){
+        w.print();
+        setTimeout(function(){ w.close(); }, 50);
+    }, 250);
+}
+</script>
 </body>
 </html>

@@ -70,17 +70,19 @@ if(isset($_POST['connexion_enseignant'])){
 
             <form method="post">
                 <label>Enseignant</label>
-                <select name="id_enseignant">
+                <select name="id_enseignant" id="id_enseignant">
                     <option value="0">-- Nouvel enseignant --</option>
                     <?php foreach($enseignants as $e): ?>
                         <option value="<?= (int)$e['id_enseignant'] ?>"><?= htmlspecialchars($e['nom_enseignant'].' '.$e['prenom_enseignant']) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <label>Création (si nouveau)</label>
-                <div class="auth-row">
-                    <input type="text" name="nom" placeholder="Nom">
-                    <input type="text" name="prenom" placeholder="Prénom">
+                <div id="creation_fields">
+                    <label>Création (si nouveau)</label>
+                    <div class="auth-row">
+                        <input type="text" name="nom" placeholder="Nom">
+                        <input type="text" name="prenom" placeholder="Prénom">
+                    </div>
                 </div>
 
                 <label>Mot de passe</label>
@@ -104,5 +106,21 @@ if(isset($_POST['connexion_enseignant'])){
         </div>
     </div>
 </div>
+<script>
+(function(){
+    var select = document.getElementById('id_enseignant');
+    var creation = document.getElementById('creation_fields');
+    function sync(){
+        if(!select || !creation){
+            return;
+        }
+        creation.style.display = (String(select.value) === '0') ? '' : 'none';
+    }
+    if(select){
+        select.addEventListener('change', sync);
+    }
+    sync();
+})();
+</script>
 </body>
 </html>

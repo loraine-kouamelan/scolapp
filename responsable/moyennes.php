@@ -112,7 +112,7 @@ foreach($notesMoyennes as $row){
         <a href="tb_principal.php" class="<?= $currentPage === 'tb_principal.php' ? 'active' : '' ?>">Tableau de bord</a>
         <a href="moyennes.php" class="<?= $currentPage === 'moyennes.php' ? 'active' : '' ?>">Moyennes</a>
         <a href="notes.php" class="<?= $currentPage === 'notes.php' ? 'active' : '' ?>">Notes / Résultats</a>
-        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètres</a>
+        <a href="parametres.php" class="<?= $currentPage === 'parametres.php' ? 'active' : '' ?>">Paramètre</a>
         <div class="spacer"></div>
         <a class="btn btn-danger" href="?logout=1">Déconnexion</a>
     </aside>
@@ -139,7 +139,7 @@ foreach($notesMoyennes as $row){
                                     <span><strong>Classe : <?= htmlspecialchars($nomClasse) ?></strong></span>
                                     <span style="display:flex; align-items:center; gap:10px;">
                                         <span class="dash-pill">Étudiants: <?= count($rows) ?></span>
-                                        <span class="btn btn-secondary" style="pointer-events:none;">Voir</span>
+                                        <span class="btn btn-secondary" data-details-label style="pointer-events:none;">Voir</span>
                                     </span>
                                 </summary>
                             <table>

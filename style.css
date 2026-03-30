@@ -403,6 +403,12 @@ body {
     min-height: 100vh;
 }
 
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 a {
     color: inherit;
 }
@@ -863,6 +869,32 @@ body.sidebar-collapsed .sidebar:hover a {
 @media (max-width: 980px) {
     .app-shell {
         grid-template-columns: 1fr;
+    }
+
+    .app-shell {
+        margin: 0;
+        padding: 12px;
+        border-radius: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .main {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .card {
+        max-width: 100%;
+        overflow: hidden;
     }
 
     .sidebar {
@@ -1418,6 +1450,22 @@ table {
     border: 1px solid rgba(31,42,68,0.08);
 }
 
+.table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll table {
+    width: max-content;
+    min-width: 100%;
+}
+
+.table-scroll th,
+.table-scroll td {
+    white-space: nowrap;
+}
+
 table th, table td {
     padding: 12px 14px;
     text-align: center;
@@ -1611,6 +1659,34 @@ table tr:hover {
     }
 }
 
+@media (max-width: 600px) {
+    .auth-shell {
+        padding: calc(22px + env(safe-area-inset-top)) 12px 22px;
+    }
+
+    .auth-panel {
+        padding: 22px 18px;
+    }
+
+    .auth-illustration {
+        min-height: 160px;
+        padding: 14px;
+    }
+
+    .auth-illustration::before {
+        inset: 14px;
+    }
+
+    .auth-illustration .auth-art {
+        padding: 18px;
+    }
+
+    .auth-illustration .auth-art-inner {
+        height: 150px;
+        max-width: 420px;
+    }
+}
+
 /* ==============================
    Messages d'erreur / succès
 ============================== */
@@ -1641,8 +1717,14 @@ p.success {
     }
 
     .sidebar {
-        position: relative;
-        height: auto;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 60;
+        width: 260px;
+        transform: translateX(-110%);
+        transition: transform 0.22s ease;
     }
 
     .navbar .container {
