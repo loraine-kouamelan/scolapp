@@ -14,10 +14,10 @@ jobs:
 
     steps:
       # 1. Récupération du code
-      - name: Récupération du code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Version PHP
+      # 2. Vérification PHP
       - name: Vérification PHP
         run: php -v
 
@@ -25,17 +25,17 @@ jobs:
       - name: Installation des dépendances
         run: composer install --no-interaction --prefer-dist
 
-      # 4. Lancement des tests PHPUnit
-      - name: Tests unitaires
+      # 4. Tests unitaires
+      - name: Tests PHPUnit
         run: vendor/bin/phpunit tests --testdox
 
       # 5. Correction automatique du style (PHPCBF)
-      - name: Correction du style de code (PHPCBF)
+      - name: Correction style (PHPCBF)
         run: vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
         continue-on-error: true
 
-      # 6. Vérification du style (PHPCS)
-      - name: Vérification du style de code (PHPCS)
+      # 6. Vérification style (PHPCS)
+      - name: Vérification style (PHPCS)
         run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
         continue-on-error: true
 
@@ -46,7 +46,9 @@ jobs:
     steps:
       # 7. Déploiement vers WAMP
       - name: Déploiement vers WAMP
+        shell: cmd
         run: |
-          echo "Déploiement en cours..."
+          echo Déploiement en cours...
           robocopy . C:\wamp64\www\memoire /MIR /XD .git vendor tests
-          echo "Déploiement terminé"
+          echo Déploiement terminé
+          exit 0
