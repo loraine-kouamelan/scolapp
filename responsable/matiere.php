@@ -389,6 +389,9 @@ if(is_array($matieres)){
                             </form>
                         </div>
 
+                        <?php if(empty($classes)): ?>
+                            <p style="margin-top:12px;">Aucune classe pour le moment. Ajoutez d'abord une classe.</p>
+                        <?php else: ?>
                         <?php foreach($classes as $c): ?>
                             <?php
                                 $idF = isset($c['id_filiere']) ? (int)$c['id_filiere'] : 0;
@@ -439,6 +442,7 @@ if(is_array($matieres)){
                                 </div>
                             </details>
                         <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -50,11 +50,20 @@ $selectionValidated = !empty($_SESSION['selection_validated']);
 
 $filieres = $pdo->query("SELECT * FROM filiere ORDER BY nom_filiere")->fetchAll(PDO::FETCH_ASSOC);
 
+$waitMessages = [];
+if(empty($filieres)){
+    $waitMessages[] = "Aucune filière n'a encore été paramétrée. Veuillez attendre que le responsable configure les filières.";
+}
+
 $classes = [];
 if($idFiliere){
     $stmt = $pdo->prepare("SELECT * FROM classe WHERE id_filiere=:idFiliere ORDER BY nom_classe");
     $stmt->execute(['idFiliere'=>$idFiliere]);
     $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+if($idFiliere && empty($classes)){
+    $waitMessages[] = "Aucune classe n'est disponible pour cette filière. Veuillez attendre que le responsable ajoute des classes.";
 }
 
 $matieres = [];
@@ -95,6 +104,10 @@ if($idClasse){
         $stmt->execute($params);
         $matieres = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+}
+
+if($idClasse && empty($matieres)){
+    $waitMessages[] = "Aucune matière n'est disponible pour cette classe. Veuillez attendre que le responsable paramètre les matières .";
 }
 
 $filiereNom = '-';
@@ -205,6 +218,13 @@ if($idClasse && $idMatiere){
                                 </div>
                             <?php endif; ?>
                         </div>
+                        <?php if(!empty($waitMessages)): ?>
+                            <div class="card" style="margin-top:12px;">
+                                <?php foreach($waitMessages as $msg): ?>
+                                    <p><?= htmlspecialchars($msg) ?></p>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                         <?php if(!$selectionValidated): ?>
                         <form method="post">
                             <label>Filière</label>

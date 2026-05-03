@@ -60,6 +60,11 @@ if(!$matieres){
     $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 }
 
+$waitMessages = [];
+if(empty($matieres)){
+    $waitMessages[] = "Aucune matière n'est disponible pour cette classe. Veuillez attendre que le responsable paramètre les matières (et éventuellement l'association classe/matière ou l'affectation enseignant/matière).";
+}
+
 if(isset($_POST['set_matiere'])){
     $newId = isset($_POST['idMatiere']) ? (int)$_POST['idMatiere'] : 0;
     if($newId > 0){
@@ -93,6 +98,10 @@ $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
 $stmtEtu = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, c.nom_classe AS classe FROM etudiant e JOIN classe c ON e.id_classe=c.id_classe WHERE e.id_classe=:idClasse ORDER BY e.nom_etudiant, e.prenom_etudiant");
 $stmtEtu->execute(['idClasse'=>$idClasse]);
 $etudiants = $stmtEtu->fetchAll(PDO::FETCH_ASSOC);
+
+if(empty($etudiants)){
+    $waitMessages[] = "Aucun étudiant n'est encore inscrit dans cette classe. Veuillez attendre que le responsable ajoute les étudiants.";
+}
 
 $notesByEtudiant = [];
 $moyenneByEtudiant = [];
@@ -242,6 +251,13 @@ if(isset($_POST['supprimer_note'])){
                 <div class="dash-col">
                     <div class="card">
                         <h2>Liste des notes</h2>
+                        <?php if(!empty($waitMessages)): ?>
+                            <div class="card" style="margin-top:12px;">
+                                <?php foreach($waitMessages as $msg): ?>
+                                    <p><?= htmlspecialchars($msg) ?></p>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
                         <div>
                             <table class="table" style="width:100%;">
                                     <thead>
@@ -267,10 +283,24 @@ if(isset($_POST['supprimer_note'])){
                                                 ?>
                                                 <?php for($i=0; $i<$maxNotes; $i++): ?>
                                                     <?php $v = isset($arr[$i]) ? $arr[$i] : null; ?>
-                                                    <td><?= $v !== null ? round((float)$v,2) : '-' ?></td>
+                                                    <td>
+                                                        <?php if($v !== null): ?>
+                                                            <?php $vv = (float)$v; ?>
+                                                            <span class="<?= $vv >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($vv,2) ?></span>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </td>
                                                 <?php endfor; ?>
                                                 <?php $mg = $moyenneByEtudiant[$eid] ?? null; ?>
-                                                <td><?= $mg !== null ? round((float)$mg,2) : '-' ?></td>
+                                                <td>
+                                                    <?php if($mg !== null): ?>
+                                                        <?php $mm = (float)$mg; ?>
+                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
                                                 <?php $formId = 'noteRow'.$eid; ?>
                                                 <td>
                                                     <input type="number" step="0.01" name="note_new" form="<?= htmlspecialchars($formId) ?>" value="" placeholder="Nouvelle note" style="width:100%;" />
@@ -290,6 +320,7 @@ if(isset($_POST['supprimer_note'])){
                         <div class="auth-actions" style="justify-content:flex-end; margin-top:12px;">
                             <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -298,6 +298,9 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </form>
                         </div>
 
+                        <?php if(empty($classes)): ?>
+                            <p style="margin-top:12px;">Aucune classe pour le moment.</p>
+                        <?php else: ?>
                         <table>
                             <thead>
                                 <tr>
@@ -346,6 +349,7 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

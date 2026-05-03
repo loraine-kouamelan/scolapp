@@ -133,35 +133,44 @@ foreach($notesMoyennes as $row){
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
                     <div class="card">
-                        <?php foreach($moyennesParClasse as $nomClasse => $rows): ?>
-                            <details style="margin-top:12px;">
-                                <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
-                                    <span><strong>Classe : <?= htmlspecialchars($nomClasse) ?></strong></span>
-                                    <span style="display:flex; align-items:center; gap:10px;">
-                                        <span class="dash-pill">Étudiants: <?= count($rows) ?></span>
-                                        <span class="btn btn-secondary" data-details-label style="pointer-events:none;">Voir</span>
-                                    </span>
-                                </summary>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Nom</th>
-                                        <th>Prénom</th>
-                                        <th>Moyenne générale</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach($rows as $n): ?>
+                        <?php if(empty($moyennesParClasse)): ?>
+                            <p>Aucune moyenne pour le moment.</p>
+                        <?php else: ?>
+                            <?php foreach($moyennesParClasse as $nomClasse => $rows): ?>
+                                <details style="margin-top:12px;">
+                                    <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
+                                        <span><strong>Classe : <?= htmlspecialchars($nomClasse) ?></strong></span>
+                                        <span style="display:flex; align-items:center; gap:10px;">
+                                            <span class="dash-pill">Étudiants: <?= count($rows) ?></span>
+                                            <span class="btn btn-secondary" data-details-label style="pointer-events:none;">Voir</span>
+                                        </span>
+                                    </summary>
+                                <table>
+                                    <thead>
                                         <tr>
-                                            <td><?= htmlspecialchars($n['nom_etudiant']) ?></td>
-                                            <td><?= htmlspecialchars($n['prenom_etudiant']) ?></td>
-                                            <td><?= $n['moyenne_generale'] !== null ? round($n['moyenne_generale'],2) : '' ?></td>
+                                            <th>Nom</th>
+                                            <th>Prénom</th>
+                                            <th>Moyenne générale</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            </details>
-                        <?php endforeach; ?>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($rows as $n): ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($n['nom_etudiant']) ?></td>
+                                                <td><?= htmlspecialchars($n['prenom_etudiant']) ?></td>
+                                                <td>
+                                                    <?php if($n['moyenne_generale'] !== null): ?>
+                                                        <?php $mm = (float)$n['moyenne_generale']; ?>
+                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                                </details>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,3 @@
-/* ==============================
-   Import police
-============================== */
 @import url('https://fonts.googleapis.com/css2?family=Royal+Aurora&display=swap');
 
 :root {
@@ -284,6 +281,12 @@ body:not(.landing-body){
     font-size: 18px;
 }
 
+.landing-feature-icon svg{
+    width: 22px;
+    height: 22px;
+    color: rgba(31,42,68,0.86);
+}
+
 .landing-feature h3{
     margin: 12px 0 0;
     color: rgba(31,42,68,0.92);
@@ -326,6 +329,25 @@ body:not(.landing-body){
 }
 
 .landing-step-text{
+    color: rgba(31,42,68,0.74);
+    font-weight: 700;
+}
+
+.landing-alert{
+    margin-top: 14px;
+    border-radius: 24px;
+    padding: 18px;
+    border: 1px solid rgba(124,92,255,0.25);
+    background: rgba(124,92,255,0.08);
+}
+
+.landing-alert-title{
+    margin: 0;
+    color: rgba(31,42,68,0.94);
+}
+
+.landing-alert p{
+    margin: 10px 0 0;
     color: rgba(31,42,68,0.74);
     font-weight: 700;
 }
@@ -375,9 +397,7 @@ body:not(.landing-body){
     }
 }
 
-/* ==============================
-   Styles généraux
-============================== */
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -1208,30 +1228,6 @@ body.sidebar-collapsed .sidebar:hover a {
         flex: 1 1 auto;
     }
 
-    table.table,
-    .table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    table.table thead,
-    .table thead {
-        white-space: nowrap;
-    }
-
-    table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    table thead {
-        white-space: nowrap;
-    }
-
     table th,
     table td {
         font-size: 13px;
@@ -1289,14 +1285,7 @@ h1, h2 {
     color: rgba(31,42,68,0.96);
 }
 
-/* ==============================
-   Container principal
-============================== */
 
-
-/* ==============================
-   Page d'accueil - cartes utilisateurs
-============================== */
 .user-card {
     display: inline-block;
     width: 270px;
@@ -1342,9 +1331,7 @@ h1, h2 {
     color: var(--very-light);
 }
 
-/* ==============================
-   Formulaires
-============================== */
+
 form {
     background-color: var(--white);
     padding: 22px 22px;
@@ -1436,9 +1423,7 @@ form button:hover {
     color: var(--very-light);
 }
 
-/* ==============================
-   Tables
-============================== */
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -1454,11 +1439,12 @@ table {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
 }
 
 .table-scroll table {
-    width: max-content;
-    min-width: 100%;
+    width: max-content !important;
+    min-width: 100% !important;
 }
 
 .table-scroll th,
@@ -1482,6 +1468,16 @@ table th {
 
 table tr:hover {
     background-color: rgba(75,110,245,0.06);
+}
+
+.score-ok {
+    color: #065f46;
+    font-weight: 800;
+}
+
+.score-ko {
+    color: #991b1b;
+    font-weight: 800;
 }
 
 .auth-shell {
@@ -1687,9 +1683,7 @@ table tr:hover {
     }
 }
 
-/* ==============================
-   Messages d'erreur / succès
-============================== */
+
 p.error {
     color: var(--cerulean-ripple);
     font-weight: bold;
@@ -1700,9 +1694,7 @@ p.success {
     font-weight: bold;
 }
 
-/* ==============================
-   Responsive
-============================== */
+
 @media screen and (max-width: 600px) {
     .user-card {
         width: 90%;

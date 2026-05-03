@@ -114,7 +114,42 @@ if($isLogged){
     <section id="how" class="landing-section">
         <div class="landing-section-title">
             <h2>Comment ça marche</h2>
-            <p>Accédez à votre espace en un clic.</p>
+            <p>Suivez le parcours selon votre rôle pour utiliser l'application efficacement.</p>
+        </div>
+        <div class="landing-features" style="margin-bottom:18px;">
+            <div class="landing-feature">
+                <div class="landing-feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V7l8-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M9 12l2 2 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3>Responsable</h3>
+                <p><strong>1.</strong> Se connecter (Responsable).</p>
+                <p><strong>2.</strong> Paramétrer les classes et les matières.</p>
+                <p><strong>3.</strong> Ajouter les étudiants et vérifier les listes.</p>
+                <p><strong>4.</strong> Consulter les notes, résultats et moyennes.</p>
+            </div>
+            <div class="landing-feature">
+                <div class="landing-feature-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 18v-8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M21 18H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M8 7l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3>Enseignant</h3>
+                <p><strong>1.</strong> Se connecter (Enseignant).</p>
+                <p><strong>2.</strong> Choisir la filière, la classe et la matière.</p>
+                <p><strong>3.</strong> Saisir les notes et les absences .</p>
+                <p><strong>4.</strong> Consulter les moyennes et imprimer si besoin.</p>
+            </div>
+        </div>
+
+        <div class="landing-alert">
+            <h3 class="landing-alert-title">Important</h3>
+            <p><strong>Enseignant :</strong> vous pouvez exécuter vos tâches uniquement si le <strong>Responsable</strong> a déjà paramétré les <strong>classes</strong>, <strong>matières</strong> et <strong>étudiants</strong>.</p>
+            <p><strong>Responsable :</strong> l'affichage des <strong>notes</strong>, <strong>résultats</strong> et <strong>moyennes</strong> dépend des saisies effectuées par l'<strong>Enseignant</strong>.</p>
         </div>
         <div class="landing-steps">
             <div class="landing-step">

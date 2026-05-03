@@ -44,6 +44,11 @@ if(!$matieres){
     $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 }
 
+$waitMessages = [];
+if(empty($matieres)){
+    $waitMessages[] = "Aucune matière n'est disponible pour cette classe. Veuillez attendre que le responsable paramètre les matières (et éventuellement l'association classe/matière ou l'affectation enseignant/matière).";
+}
+
 if(isset($_POST['set_matiere'])){
     $newId = isset($_POST['idMatiere']) ? (int)$_POST['idMatiere'] : 0;
     if($newId > 0){
@@ -77,6 +82,10 @@ $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
 $stmtEtu = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant FROM etudiant e WHERE e.id_classe=:idClasse ORDER BY e.nom_etudiant, e.prenom_etudiant");
 $stmtEtu->execute(['idClasse'=>$idClasse]);
 $etudiants = $stmtEtu->fetchAll(PDO::FETCH_ASSOC);
+
+if(empty($etudiants)){
+    $waitMessages[] = "Aucun étudiant n'est encore inscrit dans cette classe. Veuillez attendre que le responsable ajoute les étudiants.";
+}
 
 $stmtNotes = $pdo->prepare("SELECT n.id_etudiant, AVG(n.note) AS moyenne
     FROM notes n
@@ -174,6 +183,13 @@ foreach($absRaw as $row){
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
                     <div class="card">
+                        <?php if(!empty($waitMessages)): ?>
+                            <div class="card" style="margin-top:12px;">
+                                <?php foreach($waitMessages as $msg): ?>
+                                    <p><?= htmlspecialchars($msg) ?></p>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
                         <table>
                             <thead>
                                 <tr>
@@ -189,7 +205,12 @@ foreach($absRaw as $row){
                                 ?>
                                     <tr>
                                         <td><?= htmlspecialchars($e['nom_etudiant'].' '.$e['prenom_etudiant']) ?></td>
-                                        <td><?= $moy !== null ? round($moy,2) : '' ?></td>
+                                        <td>
+                                            <?php if($moy !== null): ?>
+                                                <?php $mm = (float)$moy; ?>
+                                                <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= $abs ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -198,6 +219,7 @@ foreach($absRaw as $row){
                         <div class="auth-actions" style="justify-content:flex-end; margin-top:12px;">
                             <button class="btn btn-secondary" type="button" onclick="window.print()">Imprimer</button>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

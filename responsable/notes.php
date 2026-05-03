@@ -299,7 +299,7 @@ if($idClasse){
                             </select>
 
                             <label>Matière (pour liste des notes)</label>
-                            <select name="idMatiere" <?= $idClasse ? '' : 'disabled' ?>>
+                            <select name="idMatiere" onchange="this.form.submit()" <?= $idClasse ? '' : 'disabled' ?>>
                                 <option value="">-- Choisir --</option>
                                 <?php foreach($matieres as $m): ?>
                                     <option value="<?= $m['id_matiere'] ?>" <?= ($idMatiere==$m['id_matiere']) ? 'selected' : '' ?>><?= htmlspecialchars($m['nom_matiere']) ?></option>
@@ -334,6 +334,22 @@ if($idClasse){
                         </div>
                         <?php if($idClasse && $idMatiere): ?>
                         <div id="print-notes">
+                        <?php
+                            $hasAnyNote = false;
+                            if($maxNotes > 0){
+                                foreach($notesByEtudiant as $arr){
+                                    if(is_array($arr) && count($arr) > 0){
+                                        $hasAnyNote = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        ?>
+                        <?php if(empty($etudiantsNotes)): ?>
+                            <p>Aucun étudiant n'est disponible pour cette classe.</p>
+                        <?php elseif(!$hasAnyNote): ?>
+                            <p>Aucune note pour le moment.</p>
+                        <?php else: ?>
                         <div class="table-scroll">
                             <table>
                                 <thead>
@@ -355,15 +371,30 @@ if($idClasse){
                                             <?php $arr = $notesByEtudiant[$eid] ?? []; ?>
                                             <?php for($i=0; $i<$maxNotes; $i++): ?>
                                                 <?php $v = isset($arr[$i]) ? $arr[$i] : null; ?>
-                                                <td><?= $v !== null ? round((float)$v,2) : '-' ?></td>
+                                                <td>
+                                                    <?php if($v !== null): ?>
+                                                        <?php $vv = (float)$v; ?>
+                                                        <span class="<?= $vv >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($vv,2) ?></span>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
                                             <?php endfor; ?>
                                             <?php $mg = $moyenneByEtudiant[$eid] ?? null; ?>
-                                            <td><?= $mg !== null ? round((float)$mg,2) : '-' ?></td>
+                                            <td>
+                                                <?php if($mg !== null): ?>
+                                                    <?php $mm = (float)$mg; ?>
+                                                    <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
+                        <?php endif; ?>
                         </div>
                         <?php else: ?>
                             <p>Choisis une classe et une matière.</p>
@@ -380,6 +411,9 @@ if($idClasse){
                         </div>
                         <?php if($idClasse): ?>
                         <div id="print-resultats">
+                        <?php if(empty($resultatsPivot) || empty($matieresResultats)): ?>
+                            <p>Aucun résultat pour le moment.</p>
+                        <?php else: ?>
                         <div class="table-scroll">
                             <table>
                                 <thead>
@@ -399,15 +433,26 @@ if($idClasse){
                                             <td><?= htmlspecialchars($r['prenom']) ?></td>
                                             <?php foreach($matieresResultats as $m): ?>
                                                 <?php $val = $r['matieres'][(string)$m['nom_matiere']] ?? null; ?>
-                                                <td><?= $val !== null ? round($val,2) : '' ?></td>
+                                                <td>
+                                                    <?php if($val !== null): ?>
+                                                        <?php $vv = (float)$val; ?>
+                                                        <span class="<?= $vv >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($vv,2) ?></span>
+                                                    <?php endif; ?>
+                                                </td>
                                             <?php endforeach; ?>
                                             <?php $mg = $moyennesGeneralesById[(int)$idEtudiant] ?? null; ?>
-                                            <td><?= $mg !== null ? round($mg,2) : '' ?></td>
+                                            <td>
+                                                <?php if($mg !== null): ?>
+                                                    <?php $mm = (float)$mg; ?>
+                                                    <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
+                        <?php endif; ?>
                         </div>
                         <?php else: ?>
                             <p>Choisis une classe.</p>
