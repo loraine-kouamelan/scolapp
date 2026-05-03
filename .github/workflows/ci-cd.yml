@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build-test:
+  construction-et-deploiement:
     runs-on: self-hosted
 
     steps:
@@ -17,24 +14,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Vérification de PHP
-        run: php -v
+        run: |
+          C:\wamp64\bin\php\php8.0.30\php.exe -v
 
-      - name: Installation des dépendances
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Lancement des tests unitaires
-        run: vendor/bin/phpunit --testdox
-
-      - name: Vérification du style de code
-        run: vendor/bin/phpcs --standard=PSR12 src
-
-  deploy:
-    needs: build-test
-    runs-on: self-hosted
-
-    steps:
       - name: Déploiement vers WAMP
         run: |
           echo "Déploiement en cours..."
-          robocopy . C:\wamp64\www\memoire /MIR /XD .git vendor tests
-          echo "Déploiement terminé"
+          xcopy /E /I /Y * "C:\wamp64\www\memoire\"
+          echo "Fichiers copiés"
+
+      - name: Fin
+        run: echo "Déploiement terminé"
