@@ -1,0 +1,16 @@
+# Dépendances Composer
+vendor/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Environnement
+.env
+
+# Logs
+*.log
+
+# Cache IDE
+.vscode/
+.idea/
