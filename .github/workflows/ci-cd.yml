@@ -13,28 +13,46 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Récupération du code
+      # 1. Récupération du code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Vérification de PHP
+      # 2. Vérification PHP
+      - name: Check PHP version
         run: php -v
 
-      - name: Installation des dépendances
+      # 3. Installation dépendances Composer
+      - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Lancement des tests unitaires
-        run: vendor\bin\phpunit.bat tests --testdox
+      # 4. Lancement des tests PHPUnit
+      - name: Run unit tests
+        run: vendor/bin/phpunit tests --testdox
 
-      - name: Vérification du style de code
-        run: vendor\bin\phpcs.bat --standard=PSR12 --ignore=vendor .
+      # 5. Auto-correction style PSR-12
+      - name: Fix code style (PHPCBF)
+        run: vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
+
+      # 6. Vérification style PSR-12 (quality gate)
+      - name: Check code style (PHPCS)
+        run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
 
   deploy:
     needs: build-test
     runs-on: self-hosted
 
     steps:
-      - name: Déploiement vers WAMP
+      # 1. Récupération du code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Déploiement vers WAMP
+      - name: Deploy to WAMP
         run: |
           echo "Déploiement en cours..."
           robocopy . C:\wamp64\www\memoire /MIR /XD .git vendor tests
           echo "Déploiement terminé"
+
+      # 3. Fin
+      - name: Finish
+        run: echo "CI/CD terminé avec succès"
