@@ -23,7 +23,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Lancement des tests unitaires
-        run: vendor/bin/phpunit --testdox
+        run: vendor\bin\phpunit.bat tests --testdox
 
       - name: Vérification du style de code
         run: vendor/bin/phpcs --standard=PSR12 src
