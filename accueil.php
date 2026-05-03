@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     $_SESSION = [];
-    if(ini_get('session.use_cookies')){
+    if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
     }
@@ -14,10 +14,10 @@ if(isset($_GET['logout'])){
 
 $isLogged = isset($_SESSION['id'], $_SESSION['role']);
 $dashboardUrl = 'roles.php';
-if($isLogged){
-    if($_SESSION['role'] === 'RESPONSABLE'){
+if ($isLogged) {
+    if ($_SESSION['role'] === 'RESPONSABLE') {
         $dashboardUrl = 'responsable/tb_principal.php';
-    } elseif($_SESSION['role'] === 'ENSEIGNANT'){
+    } elseif ($_SESSION['role'] === 'ENSEIGNANT') {
         $dashboardUrl = 'enseignant/selection.php';
     }
 }
@@ -42,10 +42,10 @@ if($isLogged){
             <a href="#how">Comment ça marche</a>
         </nav>
         <div class="landing-actions">
-            <?php if($isLogged): ?>
+            <?php if ($isLogged) : ?>
                 <a class="btn btn-secondary" href="<?= htmlspecialchars($dashboardUrl) ?>">Mon espace</a>
                 <a class="btn btn-secondary" href="?logout=1">Déconnexion</a>
-            <?php else: ?>
+            <?php else : ?>
                 <a class="btn btn-secondary" href="roles.php">Accéder</a>
             <?php endif; ?>
         </div>

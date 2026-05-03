@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -18,16 +18,16 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $message_action = '';
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
-if($idNiveau <= 0){
+if ($idNiveau <= 0) {
     $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtN->execute(['id'=>$_SESSION['id']]);
+    $stmtN->execute(['id' => $_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
     $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
 }
 
 $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-$stmtLib->execute(['id'=>$idNiveau]);
+$stmtLib->execute(['id' => $idNiveau]);
 $niveauInfo = $stmtLib->fetch(PDO::FETCH_ASSOC);
 $libelleNiveau = $niveauInfo && $niveauInfo['libelle_niveau'] ? (string)$niveauInfo['libelle_niveau'] : '';
 
@@ -40,37 +40,59 @@ $stmtRespFilCol->execute();
 $hasResponsableFiliere = (bool)$stmtRespFilCol->fetchColumn();
 
 $idFiliereResponsable = 0;
-if($hasResponsableFiliere){
+if ($hasResponsableFiliere) {
     $stmtRF = $pdo->prepare("SELECT id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtRF->execute(['id'=>$_SESSION['id']]);
+    $stmtRF->execute(['id' => $_SESSION['id']]);
     $rf = $stmtRF->fetch(PDO::FETCH_ASSOC);
     $idFiliereResponsable = $rf && $rf['id_filiere'] !== null ? (int)$rf['id_filiere'] : 0;
 }
 
- 
 
-function niveau_code($libelle){
+
+function niveau_code($libelle)
+{
     $l = mb_strtolower(trim((string)$libelle));
-    if(preg_match('/licen[cs]e\s*1/', $l)) return 'L1';
-    if(preg_match('/licen[cs]e\s*2/', $l)) return 'L2';
-    if(preg_match('/licen[cs]e\s*3/', $l)) return 'L3';
-    if(preg_match('/master\s*1/', $l)) return 'M1';
-    if(preg_match('/master\s*2/', $l)) return 'M2';
-    if(preg_match('/l\s*1/', $l)) return 'L1';
-    if(preg_match('/l\s*2/', $l)) return 'L2';
-    if(preg_match('/l\s*3/', $l)) return 'L3';
-    if(preg_match('/m\s*1/', $l)) return 'M1';
-    if(preg_match('/m\s*2/', $l)) return 'M2';
+    if (preg_match('/licen[cs]e\s*1/', $l)) {
+        return 'L1';
+    }
+    if (preg_match('/licen[cs]e\s*2/', $l)) {
+        return 'L2';
+    }
+    if (preg_match('/licen[cs]e\s*3/', $l)) {
+        return 'L3';
+    }
+    if (preg_match('/master\s*1/', $l)) {
+        return 'M1';
+    }
+    if (preg_match('/master\s*2/', $l)) {
+        return 'M2';
+    }
+    if (preg_match('/l\s*1/', $l)) {
+        return 'L1';
+    }
+    if (preg_match('/l\s*2/', $l)) {
+        return 'L2';
+    }
+    if (preg_match('/l\s*3/', $l)) {
+        return 'L3';
+    }
+    if (preg_match('/m\s*1/', $l)) {
+        return 'M1';
+    }
+    if (preg_match('/m\s*2/', $l)) {
+        return 'M2';
+    }
     return strtoupper(substr(preg_replace('/\s+/', '', $libelle), 0, 3));
 }
 
-function strip_niveau_prefix($filiere, $libelleNiveau){
+function strip_niveau_prefix($filiere, $libelleNiveau)
+{
     $f = trim((string)$filiere);
     $prefix = trim((string)$libelleNiveau);
-    if($prefix !== ''){
+    if ($prefix !== '') {
         $lp = mb_strtolower($prefix);
         $lf = mb_strtolower($f);
-        if(strpos($lf, $lp) === 0){
+        if (strpos($lf, $lp) === 0) {
             $rest = trim(mb_substr($f, mb_strlen($prefix)));
             return $rest !== '' ? $rest : $f;
         }
@@ -80,35 +102,35 @@ function strip_niveau_prefix($filiere, $libelleNiveau){
 
 $codeNiveau = niveau_code($libelleNiveau);
 
-if(isset($_POST['modifier_classe'])){
+if (isset($_POST['modifier_classe'])) {
     $idClasseMod = isset($_POST['id_classe']) ? (int)$_POST['id_classe'] : 0;
     $descMod = isset($_POST['description_classe']) ? trim((string)$_POST['description_classe']) : '';
-    if($idClasseMod > 0 && $descMod !== ''){
+    if ($idClasseMod > 0 && $descMod !== '') {
         $stmtChk = $pdo->prepare(
-            "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau".
-            ($idFiliereResponsable > 0 ? " AND id_filiere=:idFiliere" : "").
+            "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau" .
+            ($idFiliereResponsable > 0 ? " AND id_filiere=:idFiliere" : "") .
             " LIMIT 1"
         );
-        $params = ['idClasse'=>$idClasseMod, 'idNiveau'=>$idNiveau];
-        if($idFiliereResponsable > 0){
+        $params = ['idClasse' => $idClasseMod, 'idNiveau' => $idNiveau];
+        if ($idFiliereResponsable > 0) {
             $params['idFiliere'] = $idFiliereResponsable;
         }
         $stmtChk->execute($params);
         $ok = (bool)$stmtChk->fetchColumn();
-        if(!$ok){
+        if (!$ok) {
             $message_action = "Classe invalide.";
         } else {
-            $nomMod = trim($descMod.' - '.$codeNiveau);
+            $nomMod = trim($descMod . ' - ' . $codeNiveau);
             try {
-                if($hasDescriptionClasse){
+                if ($hasDescriptionClasse) {
                     $stmtUp = $pdo->prepare("UPDATE classe SET description_classe=:desc, nom_classe=:nom WHERE id_classe=:id");
-                    $stmtUp->execute(['desc'=>$descMod, 'nom'=>$nomMod, 'id'=>$idClasseMod]);
+                    $stmtUp->execute(['desc' => $descMod, 'nom' => $nomMod, 'id' => $idClasseMod]);
                 } else {
                     $stmtUp = $pdo->prepare("UPDATE classe SET nom_classe=:nom WHERE id_classe=:id");
-                    $stmtUp->execute(['nom'=>$nomMod, 'id'=>$idClasseMod]);
+                    $stmtUp->execute(['nom' => $nomMod, 'id' => $idClasseMod]);
                 }
                 $message_action = "Classe modifiée.";
-            } catch (PDOException $e){
+            } catch (PDOException $e) {
                 $message_action = "Impossible de modifier cette classe.";
             }
         }
@@ -117,28 +139,28 @@ if(isset($_POST['modifier_classe'])){
     }
 }
 
-if(isset($_POST['supprimer_classe'])){
+if (isset($_POST['supprimer_classe'])) {
     $idClasseSup = isset($_POST['id_classe']) ? (int)$_POST['id_classe'] : 0;
-    if($idClasseSup > 0){
+    if ($idClasseSup > 0) {
         $stmtChk = $pdo->prepare(
-            "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau".
-            ($idFiliereResponsable > 0 ? " AND id_filiere=:idFiliere" : "").
+            "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau" .
+            ($idFiliereResponsable > 0 ? " AND id_filiere=:idFiliere" : "") .
             " LIMIT 1"
         );
-        $params = ['idClasse'=>$idClasseSup, 'idNiveau'=>$idNiveau];
-        if($idFiliereResponsable > 0){
+        $params = ['idClasse' => $idClasseSup, 'idNiveau' => $idNiveau];
+        if ($idFiliereResponsable > 0) {
             $params['idFiliere'] = $idFiliereResponsable;
         }
         $stmtChk->execute($params);
         $ok = (bool)$stmtChk->fetchColumn();
-        if(!$ok){
+        if (!$ok) {
             $message_action = "Classe invalide.";
         } else {
             try {
                 $stmtDel = $pdo->prepare("DELETE FROM classe WHERE id_classe=:id");
-                $stmtDel->execute(['id'=>$idClasseSup]);
+                $stmtDel->execute(['id' => $idClasseSup]);
                 $message_action = "Classe supprimée.";
-            } catch (PDOException $e){
+            } catch (PDOException $e) {
                 $message_action = "Impossible de supprimer cette classe (elle est utilisée ailleurs).";
             }
         }
@@ -146,40 +168,40 @@ if(isset($_POST['supprimer_classe'])){
 }
 
 $filieres = [];
-if($idFiliereResponsable > 0){
+if ($idFiliereResponsable > 0) {
     $stmtFil = $pdo->prepare("SELECT id_filiere, nom_filiere FROM filiere WHERE id_filiere=:id LIMIT 1");
-    $stmtFil->execute(['id'=>$idFiliereResponsable]);
+    $stmtFil->execute(['id' => $idFiliereResponsable]);
     $f = $stmtFil->fetch(PDO::FETCH_ASSOC);
-    if($f){
+    if ($f) {
         $filieres = [$f];
     }
 } else {
-    $prefixLike = $libelleNiveau !== '' ? ($libelleNiveau.'%') : '%';
+    $prefixLike = $libelleNiveau !== '' ? ($libelleNiveau . '%') : '%';
     $stmtFil = $pdo->prepare("SELECT id_filiere, nom_filiere FROM filiere WHERE nom_filiere LIKE :p ORDER BY nom_filiere");
-    $stmtFil->execute(['p'=>$prefixLike]);
+    $stmtFil->execute(['p' => $prefixLike]);
     $filieres = $stmtFil->fetchAll(PDO::FETCH_ASSOC);
 }
 
-if(isset($_POST['creer_classe'])){
+if (isset($_POST['creer_classe'])) {
     $idF = isset($_POST['id_filiere']) ? (int)$_POST['id_filiere'] : 0;
-    if($idFiliereResponsable > 0){
+    if ($idFiliereResponsable > 0) {
         $idF = $idFiliereResponsable;
     }
     $desc = isset($_POST['description_classe']) ? trim((string)$_POST['description_classe']) : '';
     $nom = '';
 
-    if($idF > 0 && $desc !== ''){
-        $nom = trim($desc.' - '.$codeNiveau);
+    if ($idF > 0 && $desc !== '') {
+        $nom = trim($desc . ' - ' . $codeNiveau);
         try {
-            if($hasDescriptionClasse){
+            if ($hasDescriptionClasse) {
                 $stmtIns = $pdo->prepare("INSERT INTO classe (nom_classe, description_classe, id_niveau, id_filiere) VALUES (:nom, :desc, :idNiveau, :idFiliere)");
-                $stmtIns->execute(['nom'=>$nom, 'desc'=>$desc, 'idNiveau'=>$idNiveau, 'idFiliere'=>$idF]);
+                $stmtIns->execute(['nom' => $nom, 'desc' => $desc, 'idNiveau' => $idNiveau, 'idFiliere' => $idF]);
             } else {
                 $stmtIns = $pdo->prepare("INSERT INTO classe (nom_classe, id_niveau, id_filiere) VALUES (:nom, :idNiveau, :idFiliere)");
-                $stmtIns->execute(['nom'=>$nom, 'idNiveau'=>$idNiveau, 'idFiliere'=>$idF]);
+                $stmtIns->execute(['nom' => $nom, 'idNiveau' => $idNiveau, 'idFiliere' => $idF]);
             }
             $message_action = 'Classe créée.';
-        } catch (PDOException $e){
+        } catch (PDOException $e) {
             $message_action = "Impossible de créer cette classe.";
         }
     } else {
@@ -189,10 +211,9 @@ if(isset($_POST['creer_classe'])){
 
 $stmt = $pdo->prepare($idFiliereResponsable > 0
     ? "SELECT c.*, f.nom_filiere AS filiere FROM classe c LEFT JOIN filiere f ON c.id_filiere=f.id_filiere WHERE c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere ORDER BY f.nom_filiere, c.nom_classe"
-    : "SELECT c.*, f.nom_filiere AS filiere FROM classe c LEFT JOIN filiere f ON c.id_filiere=f.id_filiere WHERE c.id_niveau=:idNiveau ORDER BY f.nom_filiere, c.nom_classe"
-);
-$params = ['idNiveau'=>$idNiveau];
-if($idFiliereResponsable > 0){
+    : "SELECT c.*, f.nom_filiere AS filiere FROM classe c LEFT JOIN filiere f ON c.id_filiere=f.id_filiere WHERE c.id_niveau=:idNiveau ORDER BY f.nom_filiere, c.nom_classe");
+$params = ['idNiveau' => $idNiveau];
+if ($idFiliereResponsable > 0) {
     $params['idFiliere'] = $idFiliereResponsable;
 }
 $stmt->execute($params);
@@ -258,7 +279,7 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <?php if($message_action !== ''): ?>
+            <?php if ($message_action !== '') : ?>
                 <div class="card" style="margin-top:16px;">
                     <p><?= htmlspecialchars($message_action) ?></p>
                 </div>
@@ -277,15 +298,15 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <label>Niveau</label>
                                 <input type="text" value="<?= htmlspecialchars($libelleNiveau) ?>" disabled>
 
-                                <?php if($idFiliereResponsable <= 0): ?>
+                                <?php if ($idFiliereResponsable <= 0) : ?>
                                     <label>Filière</label>
                                     <select name="id_filiere" required>
                                         <option value="">-- Choisir --</option>
-                                        <?php foreach($filieres as $f): ?>
+                                        <?php foreach ($filieres as $f) : ?>
                                             <option value="<?= (int)$f['id_filiere'] ?>"><?= htmlspecialchars((string)$f['nom_filiere']) ?></option>
                                         <?php endforeach; ?>
                                     </select>
-                                <?php else: ?>
+                                <?php else : ?>
                                     <input type="hidden" name="id_filiere" value="<?= (int)$idFiliereResponsable ?>">
                                 <?php endif; ?>
 
@@ -298,9 +319,9 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </form>
                         </div>
 
-                        <?php if(empty($classes)): ?>
+                        <?php if (empty($classes)) : ?>
                             <p style="margin-top:12px;">Aucune classe pour le moment.</p>
-                        <?php else: ?>
+                        <?php else : ?>
                         <table>
                             <thead>
                                 <tr>
@@ -310,14 +331,14 @@ $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach($classes as $c): ?>
+                                <?php foreach ($classes as $c) : ?>
                                     <tr>
                                         <td>
                                             <?php
                                                 $desc = $hasDescriptionClasse ? trim((string)($c['description_classe'] ?? '')) : '';
                                                 $base = $desc !== '' ? $desc : (string)$c['nom_classe'];
                                                 $prefix = trim((string)$libelleNiveau);
-                                                $label = $prefix !== '' ? ($prefix.' — '.$base) : $base;
+                                                $label = $prefix !== '' ? ($prefix . ' — ' . $base) : $base;
                                                 echo htmlspecialchars($label);
                                             ?>
                                         </td>

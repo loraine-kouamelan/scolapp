@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT') {
     header("Location: connexion_enseignant.php");
     exit();
 }
 
-if(!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])){
+if (!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])) {
     header("Location: selection.php");
     exit();
 }
@@ -15,14 +15,14 @@ if(!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])){
 $idClasse = $_SESSION['idClasse'];
 $idMatiere = $_SESSION['idMatiere'];
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
 }
 
 $stmtFil = $pdo->prepare("SELECT id_filiere FROM classe WHERE id_classe=:idClasse LIMIT 1");
-$stmtFil->execute(['idClasse'=>$idClasse]);
+$stmtFil->execute(['idClasse' => $idClasse]);
 $classeInfo = $stmtFil->fetch(PDO::FETCH_ASSOC);
 $idFiliereClasse = $classeInfo ? (int)$classeInfo['id_filiere'] : 0;
 
@@ -33,18 +33,18 @@ $stmtMatList = $pdo->prepare("
     WHERE m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
     ORDER BY m.nom_matiere
 ");
-$stmtMatList->execute(['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']]);
+$stmtMatList->execute(['idFiliere' => $idFiliereClasse, 'idEnseignant' => $_SESSION['id']]);
 $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 
-if(!$matieres){
+if (!$matieres) {
     $stmtMatList = $pdo->prepare("SELECT * FROM matiere WHERE id_filiere=:idFiliere ORDER BY nom_matiere");
-    $stmtMatList->execute(['idFiliere'=>$idFiliereClasse]);
+    $stmtMatList->execute(['idFiliere' => $idFiliereClasse]);
     $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 }
 
-if(isset($_POST['set_matiere'])){
+if (isset($_POST['set_matiere'])) {
     $newId = isset($_POST['idMatiere']) ? (int)$_POST['idMatiere'] : 0;
-    if($newId > 0){
+    if ($newId > 0) {
         $stmtChk = $pdo->prepare("
             SELECT m.id_matiere
             FROM matiere m
@@ -52,14 +52,14 @@ if(isset($_POST['set_matiere'])){
             WHERE m.id_matiere=:idMatiere AND m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
             LIMIT 1
         ");
-        $stmtChk->execute(['idMatiere'=>$newId, 'idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']]);
+        $stmtChk->execute(['idMatiere' => $newId, 'idFiliere' => $idFiliereClasse, 'idEnseignant' => $_SESSION['id']]);
         $ok = $stmtChk->fetch(PDO::FETCH_ASSOC);
-        if(!$ok){
+        if (!$ok) {
             $stmtChk = $pdo->prepare("SELECT id_matiere FROM matiere WHERE id_matiere=:idMatiere AND id_filiere=:idFiliere LIMIT 1");
-            $stmtChk->execute(['idMatiere'=>$newId, 'idFiliere'=>$idFiliereClasse]);
+            $stmtChk->execute(['idMatiere' => $newId, 'idFiliere' => $idFiliereClasse]);
             $ok = $stmtChk->fetch(PDO::FETCH_ASSOC);
         }
-        if($ok){
+        if ($ok) {
             $_SESSION['idMatiere'] = $newId;
             $idMatiere = $newId;
         }
@@ -69,7 +69,7 @@ if(isset($_POST['set_matiere'])){
 }
 
 $stmtMat = $pdo->prepare("SELECT m.* FROM matiere m WHERE m.id_matiere=:idMatiere LIMIT 1");
-$stmtMat->execute(['idMatiere'=>$idMatiere]);
+$stmtMat->execute(['idMatiere' => $idMatiere]);
 $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
 
 $stmtEtuNotes = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, c.nom_classe AS classe, n.note
@@ -85,7 +85,7 @@ $stmtEtuNotes = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_et
     WHERE e.id_classe=:idClasse
     ORDER BY e.nom_etudiant, e.prenom_etudiant
 ");
-$stmtEtuNotes->execute(['idClasse'=>$idClasse, 'idMatiere'=>$idMatiere]);
+$stmtEtuNotes->execute(['idClasse' => $idClasse, 'idMatiere' => $idMatiere]);
 $rows = $stmtEtuNotes->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -148,7 +148,7 @@ $rows = $stmtEtuNotes->fetchAll(PDO::FETCH_ASSOC);
                     <form method="post" style="display:inline-flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <input type="hidden" name="set_matiere" value="1">
                         <select name="idMatiere" onchange="this.form.submit()" style="min-width:220px;">
-                            <?php foreach($matieres as $m): ?>
+                            <?php foreach ($matieres as $m) : ?>
                                 <option value="<?= (int)$m['id_matiere'] ?>" <?= ((int)$idMatiere === (int)$m['id_matiere']) ? 'selected' : '' ?>><?= htmlspecialchars($m['nom_matiere']) ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -170,9 +170,9 @@ $rows = $stmtEtuNotes->fetchAll(PDO::FETCH_ASSOC);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach($rows as $r): ?>
+                                    <?php foreach ($rows as $r) : ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($r['nom_etudiant'].' '.$r['prenom_etudiant']) ?></td>
+                                            <td><?= htmlspecialchars($r['nom_etudiant'] . ' ' . $r['prenom_etudiant']) ?></td>
                                             <td><?= ($r['note'] === null || $r['note'] === '') ? '-' : htmlspecialchars($r['note']) ?></td>
                                         </tr>
                                     <?php endforeach; ?>

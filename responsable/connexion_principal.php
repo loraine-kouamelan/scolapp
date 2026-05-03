@@ -11,24 +11,23 @@ $stmtRespFilCol = $pdo->prepare("SELECT 1 FROM information_schema.columns WHERE 
 $stmtRespFilCol->execute();
 $hasResponsableFiliere = (bool)$stmtRespFilCol->fetchColumn();
 
-if(isset($_POST['connexion_principal'])){
+if (isset($_POST['connexion_principal'])) {
     $idResponsable = isset($_POST['id_responsable']) ? (int)$_POST['id_responsable'] : 0;
     $mdp = isset($_POST['motDePasse']) ? $_POST['motDePasse'] : '';
 
-    if($idResponsable > 0){
+    if ($idResponsable > 0) {
         // Login existing responsable
         $stmt = $pdo->prepare($hasResponsableFiliere
             ? "SELECT id_responsable, mdp_responsable, id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
-            : "SELECT id_responsable, mdp_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
-        );
-        $stmt->execute(['id'=>$idResponsable]);
+            : "SELECT id_responsable, mdp_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
+        $stmt->execute(['id' => $idResponsable]);
         $p = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if(!$p){
+
+        if (!$p) {
             $message = "Responsable introuvable.";
-        } else if($mdp === ''){
+        } elseif ($mdp === '') {
             $message = "Veuillez renseigner le mot de passe.";
-        } else if(!password_verify($mdp, $p['mdp_responsable'])){
+        } elseif (!password_verify($mdp, $p['mdp_responsable'])) {
             $message = "Mot de passe incorrect.";
         } else {
             $_SESSION['id'] = (int)$p['id_responsable'];
@@ -46,75 +45,75 @@ if(isset($_POST['connexion_principal'])){
         $nouvelleFiliere = isset($_POST['nouvelle_filiere']) ? trim($_POST['nouvelle_filiere']) : '';
 
         $idNiveau = 0;
-        if($nouveauNiveau !== ''){
+        if ($nouveauNiveau !== '') {
             $stmtFind = $pdo->prepare("SELECT id_niveau FROM niveau WHERE libelle_niveau=:libelle LIMIT 1");
-            $stmtFind->execute(['libelle'=>$nouveauNiveau]);
+            $stmtFind->execute(['libelle' => $nouveauNiveau]);
             $found = $stmtFind->fetch(PDO::FETCH_ASSOC);
-            if($found){
+            if ($found) {
                 $idNiveau = (int)$found['id_niveau'];
             } else {
                 try {
                     $stmtN = $pdo->prepare("INSERT INTO niveau (libelle_niveau) VALUES (:libelle)");
-                    $stmtN->execute(['libelle'=>$nouveauNiveau]);
+                    $stmtN->execute(['libelle' => $nouveauNiveau]);
                     $idNiveau = (int)$pdo->lastInsertId();
-                } catch (PDOException $e){
+                } catch (PDOException $e) {
                     $idNiveau = 0;
                 }
             }
         }
 
         $idFiliere = 0;
-        if($nouvelleFiliere !== ''){
+        if ($nouvelleFiliere !== '') {
             $nomFiliereDb = $nouvelleFiliere;
             $stmtFindF = $pdo->prepare("SELECT id_filiere FROM filiere WHERE LOWER(nom_filiere)=LOWER(:nom) LIMIT 1");
-            $stmtFindF->execute(['nom'=>$nomFiliereDb]);
+            $stmtFindF->execute(['nom' => $nomFiliereDb]);
             $foundF = $stmtFindF->fetch(PDO::FETCH_ASSOC);
-            if($foundF){
+            if ($foundF) {
                 $idFiliere = (int)$foundF['id_filiere'];
             } else {
                 try {
                     $stmtF = $pdo->prepare("INSERT INTO filiere (nom_filiere) VALUES (:nom)");
-                    $stmtF->execute(['nom'=>$nomFiliereDb]);
+                    $stmtF->execute(['nom' => $nomFiliereDb]);
                     $idFiliere = (int)$pdo->lastInsertId();
-                } catch (PDOException $e){
+                } catch (PDOException $e) {
                     $idFiliere = 0;
                 }
             }
         }
 
-        if($nom === '' || $prenom === '' || $mdp === '' || $idNiveau <= 0 || $idFiliere <= 0){
+        if ($nom === '' || $prenom === '' || $mdp === '' || $idNiveau <= 0 || $idFiliere <= 0) {
             $message = "Veuillez renseigner le nom, le prénom, le niveau, la filière et le mot de passe.";
         } else {
             try {
                 $stmtExists = $pdo->prepare("SELECT id_responsable FROM responsable WHERE id_niveau=:idNiveau LIMIT 1");
-                $stmtExists->execute(['idNiveau'=>$idNiveau]);
+                $stmtExists->execute(['idNiveau' => $idNiveau]);
                 $deja = $stmtExists->fetch(PDO::FETCH_ASSOC);
 
-                if($deja){
+                if ($deja) {
                     $message = "Un responsable existe déjà pour ce niveau.";
                 } else {
-                $stmt2 = $pdo->prepare("INSERT INTO responsable (nom_responsable, prenom_responsable, mdp_responsable, id_niveau) VALUES (:nom, :prenom, :mdp, :idNiveau)");
-                $stmt2->execute([
-                    'nom'=>$nom,
-                    'prenom'=>$prenom,
-                    'mdp'=>password_hash($mdp, PASSWORD_DEFAULT),
-                    'idNiveau'=>$idNiveau
-                ]);
+                    $stmt2 = $pdo->prepare("INSERT INTO responsable (nom_responsable, prenom_responsable, mdp_responsable, id_niveau) VALUES (:nom, :prenom, :mdp, :idNiveau)");
+                    $stmt2->execute([
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'mdp' => password_hash($mdp, PASSWORD_DEFAULT),
+                    'idNiveau' => $idNiveau
+                    ]);
 
-                $_SESSION['id'] = (int)$pdo->lastInsertId();
-                $_SESSION['role'] = 'RESPONSABLE';
-                $_SESSION['id_niveau'] = $idNiveau;
-                if($hasResponsableFiliere){
-                    $stmtUp = $pdo->prepare("UPDATE responsable SET id_filiere=:idFiliere WHERE id_responsable=:id LIMIT 1");
-                    $stmtUp->execute(['idFiliere'=>$idFiliere, 'id'=>$_SESSION['id']]);
-                    $_SESSION['id_filiere'] = $idFiliere;
-                } else {
-                    $_SESSION['id_filiere'] = null;
+                    $_SESSION['id'] = (int)$pdo->lastInsertId();
+                    $_SESSION['role'] = 'RESPONSABLE';
+                    $_SESSION['id_niveau'] = $idNiveau;
+                    if ($hasResponsableFiliere) {
+                        $stmtUp = $pdo->prepare("UPDATE responsable SET id_filiere=:idFiliere WHERE id_responsable=:id LIMIT 1");
+                        $stmtUp->execute(['idFiliere' => $idFiliere, 'id' => $_SESSION['id']]);
+                        $_SESSION['id_filiere'] = $idFiliere;
+                    } else {
+                        $_SESSION['id_filiere'] = null;
+                    }
+                    header("Location: tb_principal.php");
+                    exit();
                 }
-                header("Location: tb_principal.php");
-                exit();
-                }
-            } catch (PDOException $e){
+            } catch (PDOException $e) {
                 $message = "Impossible de créer ce responsable (niveau déjà attribué ?).";
             }
         }
@@ -136,7 +135,7 @@ if(isset($_POST['connexion_principal'])){
             <h1>ScolApp</h1>
             <p class="auth-subtitle">Connexion / création d'un compte responsable</p>
 
-            <?php if($message!=""): ?>
+            <?php if ($message != "") : ?>
                 <div class="auth-message"><?= htmlspecialchars($message) ?></div>
             <?php endif; ?>
 
@@ -144,8 +143,8 @@ if(isset($_POST['connexion_principal'])){
                 <label>Responsable</label>
                 <select name="id_responsable" id="id_responsable">
                     <option value="0">-- Nouveau responsable --</option>
-                    <?php foreach($responsables as $r): ?>
-                        <option value="<?= (int)$r['id_responsable'] ?>"><?= htmlspecialchars($r['nom_responsable'].' '.$r['prenom_responsable']) ?></option>
+                    <?php foreach ($responsables as $r) : ?>
+                        <option value="<?= (int)$r['id_responsable'] ?>"><?= htmlspecialchars($r['nom_responsable'] . ' ' . $r['prenom_responsable']) ?></option>
                     <?php endforeach; ?>
                 </select>
 

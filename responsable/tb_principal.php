@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -21,43 +21,42 @@ $hasResponsableFiliere = (bool)$stmtRespFilCol->fetchColumn();
 
 $stmtR = $pdo->prepare($hasResponsableFiliere
     ? "SELECT nom_responsable, prenom_responsable, id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
-    : "SELECT nom_responsable, prenom_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1"
-);
-$stmtR->execute(['id'=>$_SESSION['id']]);
+    : "SELECT nom_responsable, prenom_responsable, id_niveau, NULL AS id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
+$stmtR->execute(['id' => $_SESSION['id']]);
 $responsable = $stmtR->fetch(PDO::FETCH_ASSOC);
 
 $idNiveau = null;
-if($responsable && $responsable['id_niveau'] !== null){
+if ($responsable && $responsable['id_niveau'] !== null) {
     $idNiveau = (int)$responsable['id_niveau'];
 }
 
 $niveau = null;
-if($idNiveau !== null){
+if ($idNiveau !== null) {
     $stmtN = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-    $stmtN->execute(['id'=>$idNiveau]);
+    $stmtN->execute(['id' => $idNiveau]);
     $niveau = $stmtN->fetch(PDO::FETCH_ASSOC);
 }
 
 $filiereResponsable = null;
 $idFiliereResponsable = null;
-if($responsable && $responsable['id_filiere'] !== null){
+if ($responsable && $responsable['id_filiere'] !== null) {
     $idFiliereResponsable = (int)$responsable['id_filiere'];
 }
-if($idFiliereResponsable !== null && $idFiliereResponsable > 0){
+if ($idFiliereResponsable !== null && $idFiliereResponsable > 0) {
     $stmtFR = $pdo->prepare("SELECT nom_filiere FROM filiere WHERE id_filiere=:id LIMIT 1");
-    $stmtFR->execute(['id'=>$idFiliereResponsable]);
+    $stmtFR->execute(['id' => $idFiliereResponsable]);
     $filiereResponsable = $stmtFR->fetch(PDO::FETCH_ASSOC);
 }
 
 $stmtC = $pdo->prepare("\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n");
-$stmtC->execute(['idNiveau'=>$idNiveau]);
+$stmtC->execute(['idNiveau' => $idNiveau]);
 $classes = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 
 $nbClasses = is_array($classes) ? count($classes) : 0;
 $nbEtudiants = 0;
-if($idNiveau !== null){
+if ($idNiveau !== null) {
     $stmtE = $pdo->prepare("SELECT COUNT(*) AS nb FROM etudiant e JOIN classe c ON c.id_classe=e.id_classe WHERE c.id_niveau=:idNiveau");
-    $stmtE->execute(['idNiveau'=>$idNiveau]);
+    $stmtE->execute(['idNiveau' => $idNiveau]);
     $rowE = $stmtE->fetch(PDO::FETCH_ASSOC);
     $nbEtudiants = $rowE ? (int)$rowE['nb'] : 0;
 }
@@ -116,11 +115,11 @@ if($idNiveau !== null){
                     <h1>Tableau de bord</h1>
                     <p>
                         Tableau de bord —
-                        <?= htmlspecialchars(trim(($responsable['nom_responsable'] ?? '').' '.($responsable['prenom_responsable'] ?? ''))) ?>
-                        <?php if($niveau): ?>
+                        <?= htmlspecialchars(trim(($responsable['nom_responsable'] ?? '') . ' ' . ($responsable['prenom_responsable'] ?? ''))) ?>
+                        <?php if ($niveau) : ?>
                             — <?= htmlspecialchars($niveau['libelle_niveau']) ?>
                         <?php endif; ?>
-                        <?php if($filiereResponsable && isset($filiereResponsable['nom_filiere'])): ?>
+                        <?php if ($filiereResponsable && isset($filiereResponsable['nom_filiere'])) : ?>
                             — <?= htmlspecialchars((string)$filiereResponsable['nom_filiere']) ?>
                         <?php endif; ?>
                     </p>
@@ -135,9 +134,9 @@ if($idNiveau !== null){
                 <div class="dash-col">
                     <div class="card">
                         <h2>Mes classes</h2>
-                        <?php if(empty($classes)): ?>
+                        <?php if (empty($classes)) : ?>
                             <p>Aucune classe associée à ce niveau.</p>
-                        <?php else: ?>
+                        <?php else : ?>
                             <table>
                                 <thead>
                                     <tr>
@@ -147,14 +146,14 @@ if($idNiveau !== null){
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach($classes as $c): ?>
+                                    <?php foreach ($classes as $c) : ?>
                                         <tr>
                                             <td>
                                                 <?php
                                                     $desc = isset($c['description_classe']) ? trim((string)$c['description_classe']) : '';
                                                     $base = $desc !== '' ? $desc : (string)$c['nom_classe'];
                                                     $prefix = $niveau && isset($niveau['libelle_niveau']) ? trim((string)$niveau['libelle_niveau']) : '';
-                                                    $label = $prefix !== '' ? ($prefix.' — '.$base) : $base;
+                                                    $label = $prefix !== '' ? ($prefix . ' — ' . $base) : $base;
                                                     echo htmlspecialchars($label);
                                                 ?>
                                             </td>
@@ -184,7 +183,7 @@ if($idNiveau !== null){
                                 <div class="label">Niveau</div>
                                 <div class="value"><?= htmlspecialchars($niveau ? $niveau['libelle_niveau'] : '-') ?></div>
                             </div>
-                            <?php if($filiereResponsable && isset($filiereResponsable['nom_filiere'])): ?>
+                            <?php if ($filiereResponsable && isset($filiereResponsable['nom_filiere'])) : ?>
                             <div class="stat">
                                 <div class="label">Filière</div>
                                 <div class="value"><?= htmlspecialchars((string)$filiereResponsable['nom_filiere']) ?></div>

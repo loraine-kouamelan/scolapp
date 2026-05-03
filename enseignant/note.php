@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT') {
     header("Location: connexion_enseignant.php");
     exit();
 }
 
-if(!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])){
+if (!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])) {
     header("Location: selection.php");
     exit();
 }
@@ -15,7 +15,7 @@ if(!isset($_SESSION['idClasse'], $_SESSION['idMatiere'])){
 $idClasse = $_SESSION['idClasse'];
 $idMatiere = $_SESSION['idMatiere'];
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -24,7 +24,7 @@ if(isset($_GET['logout'])){
 $currentPage = basename($_SERVER['PHP_SELF']);
 
 $stmtFil = $pdo->prepare("SELECT id_filiere FROM classe WHERE id_classe=:idClasse LIMIT 1");
-$stmtFil->execute(['idClasse'=>$idClasse]);
+$stmtFil->execute(['idClasse' => $idClasse]);
 $classeInfo = $stmtFil->fetch(PDO::FETCH_ASSOC);
 $idFiliereClasse = $classeInfo ? (int)$classeInfo['id_filiere'] : 0;
 
@@ -36,24 +36,24 @@ $stmtMatList = $pdo->prepare("
     SELECT m.*
     FROM matiere m
     JOIN enseignement en ON en.id_matiere=m.id_matiere
-    ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "")."
+    " . ($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "") . "
     WHERE m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
     ORDER BY m.nom_matiere
 ");
-$params = ['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']];
-if($hasClasseMatiere){
+$params = ['idFiliere' => $idFiliereClasse, 'idEnseignant' => $_SESSION['id']];
+if ($hasClasseMatiere) {
     $params['idClasse'] = (int)$idClasse;
 }
 $stmtMatList->execute($params);
 $matieres = $stmtMatList->fetchAll(PDO::FETCH_ASSOC);
 
-if(!$matieres){
+if (!$matieres) {
     $stmtMatList = $pdo->prepare(
-        "SELECT m.* FROM matiere m ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "").
+        "SELECT m.* FROM matiere m " . ($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "") .
         "WHERE m.id_filiere=:idFiliere ORDER BY m.nom_matiere"
     );
-    $params = ['idFiliere'=>$idFiliereClasse];
-    if($hasClasseMatiere){
+    $params = ['idFiliere' => $idFiliereClasse];
+    if ($hasClasseMatiere) {
         $params['idClasse'] = (int)$idClasse;
     }
     $stmtMatList->execute($params);
@@ -61,13 +61,13 @@ if(!$matieres){
 }
 
 $waitMessages = [];
-if(empty($matieres)){
+if (empty($matieres)) {
     $waitMessages[] = "Aucune matière n'est disponible pour cette classe. Veuillez attendre que le responsable paramètre les matières (et éventuellement l'association classe/matière ou l'affectation enseignant/matière).";
 }
 
-if(isset($_POST['set_matiere'])){
+if (isset($_POST['set_matiere'])) {
     $newId = isset($_POST['idMatiere']) ? (int)$_POST['idMatiere'] : 0;
-    if($newId > 0){
+    if ($newId > 0) {
         $stmtChk = $pdo->prepare("
             SELECT m.id_matiere
             FROM matiere m
@@ -75,14 +75,14 @@ if(isset($_POST['set_matiere'])){
             WHERE m.id_matiere=:idMatiere AND m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
             LIMIT 1
         ");
-        $stmtChk->execute(['idMatiere'=>$newId, 'idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']]);
+        $stmtChk->execute(['idMatiere' => $newId, 'idFiliere' => $idFiliereClasse, 'idEnseignant' => $_SESSION['id']]);
         $ok = $stmtChk->fetch(PDO::FETCH_ASSOC);
-        if(!$ok){
+        if (!$ok) {
             $stmtChk = $pdo->prepare("SELECT id_matiere FROM matiere WHERE id_matiere=:idMatiere AND id_filiere=:idFiliere LIMIT 1");
-            $stmtChk->execute(['idMatiere'=>$newId, 'idFiliere'=>$idFiliereClasse]);
+            $stmtChk->execute(['idMatiere' => $newId, 'idFiliere' => $idFiliereClasse]);
             $ok = $stmtChk->fetch(PDO::FETCH_ASSOC);
         }
-        if($ok){
+        if ($ok) {
             $_SESSION['idMatiere'] = $newId;
             $idMatiere = $newId;
         }
@@ -92,14 +92,14 @@ if(isset($_POST['set_matiere'])){
 }
 
 $stmtMat = $pdo->prepare("SELECT m.* FROM matiere m WHERE m.id_matiere=:idMatiere LIMIT 1");
-$stmtMat->execute(['idMatiere'=>$idMatiere]);
+$stmtMat->execute(['idMatiere' => $idMatiere]);
 $matiere = $stmtMat->fetch(PDO::FETCH_ASSOC);
 
 $stmtEtu = $pdo->prepare("SELECT e.id_etudiant, e.nom_etudiant, e.prenom_etudiant, c.nom_classe AS classe FROM etudiant e JOIN classe c ON e.id_classe=c.id_classe WHERE e.id_classe=:idClasse ORDER BY e.nom_etudiant, e.prenom_etudiant");
-$stmtEtu->execute(['idClasse'=>$idClasse]);
+$stmtEtu->execute(['idClasse' => $idClasse]);
 $etudiants = $stmtEtu->fetchAll(PDO::FETCH_ASSOC);
 
-if(empty($etudiants)){
+if (empty($etudiants)) {
     $waitMessages[] = "Aucun étudiant n'est encore inscrit dans cette classe. Veuillez attendre que le responsable ajoute les étudiants.";
 }
 
@@ -107,7 +107,7 @@ $notesByEtudiant = [];
 $moyenneByEtudiant = [];
 $maxNotes = 0;
 
-foreach($etudiants as $e){
+foreach ($etudiants as $e) {
     $eid = (int)$e['id_etudiant'];
     $notesByEtudiant[$eid] = [];
     $moyenneByEtudiant[$eid] = null;
@@ -120,22 +120,22 @@ $stmtNotes = $pdo->prepare("
     WHERE e.id_classe=:idClasse AND n.id_matiere=:idMatiere
     ORDER BY n.date_note ASC, n.id_note ASC
 ");
-$stmtNotes->execute(['idClasse'=>$idClasse, 'idMatiere'=>$idMatiere]);
+$stmtNotes->execute(['idClasse' => $idClasse, 'idMatiere' => $idMatiere]);
 $notesRows = $stmtNotes->fetchAll(PDO::FETCH_ASSOC);
-foreach($notesRows as $r){
+foreach ($notesRows as $r) {
     $eid = (int)$r['id_etudiant'];
-    if(!isset($notesByEtudiant[$eid])){
+    if (!isset($notesByEtudiant[$eid])) {
         $notesByEtudiant[$eid] = [];
     }
     $notesByEtudiant[$eid][] = $r['note'] !== null ? (float)$r['note'] : null;
 }
 
-foreach($notesByEtudiant as $eid => $arr){
+foreach ($notesByEtudiant as $eid => $arr) {
     $maxNotes = max($maxNotes, is_array($arr) ? count($arr) : 0);
     $sum = 0.0;
     $cnt = 0;
-    foreach($arr as $v){
-        if($v === null){
+    foreach ($arr as $v) {
+        if ($v === null) {
             continue;
         }
         $sum += (float)$v;
@@ -144,35 +144,35 @@ foreach($notesByEtudiant as $eid => $arr){
     $moyenneByEtudiant[(int)$eid] = $cnt > 0 ? ($sum / $cnt) : null;
 }
 
-if(isset($_POST['ajouter_note'])){
+if (isset($_POST['ajouter_note'])) {
     $idEt = isset($_POST['id_etudiant']) ? (int)$_POST['id_etudiant'] : 0;
     $val = isset($_POST['note_new']) ? trim((string)$_POST['note_new']) : '';
-    if($idEt > 0 && $val !== ''){
+    if ($idEt > 0 && $val !== '') {
         $stmtChkEtu = $pdo->prepare("SELECT id_etudiant FROM etudiant WHERE id_etudiant=:idEtudiant AND id_classe=:idClasse LIMIT 1");
-        $stmtChkEtu->execute(['idEtudiant'=>$idEt, 'idClasse'=>$idClasse]);
+        $stmtChkEtu->execute(['idEtudiant' => $idEt, 'idClasse' => $idClasse]);
         $etuOk = $stmtChkEtu->fetch(PDO::FETCH_ASSOC);
-        if($etuOk){
+        if ($etuOk) {
             $stmtIns = $pdo->prepare("INSERT INTO notes (note, type_note, id_etudiant, id_matiere) VALUES (:note, NULL, :idEtudiant, :idMatiere)");
-            $stmtIns->execute(['note'=>$val, 'idEtudiant'=>$idEt, 'idMatiere'=>$idMatiere]);
+            $stmtIns->execute(['note' => $val, 'idEtudiant' => $idEt, 'idMatiere' => $idMatiere]);
         }
     }
     header('Location: note.php');
     exit();
 }
 
-if(isset($_POST['supprimer_note'])){
+if (isset($_POST['supprimer_note'])) {
     $idEt = isset($_POST['id_etudiant']) ? (int)$_POST['id_etudiant'] : 0;
-    if($idEt > 0){
+    if ($idEt > 0) {
         $stmtChkEtu = $pdo->prepare("SELECT id_etudiant FROM etudiant WHERE id_etudiant=:idEtudiant AND id_classe=:idClasse LIMIT 1");
-        $stmtChkEtu->execute(['idEtudiant'=>$idEt, 'idClasse'=>$idClasse]);
+        $stmtChkEtu->execute(['idEtudiant' => $idEt, 'idClasse' => $idClasse]);
         $etuOk = $stmtChkEtu->fetch(PDO::FETCH_ASSOC);
-        if($etuOk){
+        if ($etuOk) {
             $stmtLast = $pdo->prepare("SELECT n.id_note FROM notes n WHERE n.id_etudiant=:idEtudiant AND n.id_matiere=:idMatiere ORDER BY n.date_note DESC, n.id_note DESC LIMIT 1");
-            $stmtLast->execute(['idEtudiant'=>$idEt, 'idMatiere'=>$idMatiere]);
+            $stmtLast->execute(['idEtudiant' => $idEt, 'idMatiere' => $idMatiere]);
             $idNote = (int)$stmtLast->fetchColumn();
-            if($idNote > 0){
+            if ($idNote > 0) {
                 $stmtDel = $pdo->prepare("DELETE FROM notes WHERE id_note=:id");
-                $stmtDel->execute(['id'=>$idNote]);
+                $stmtDel->execute(['id' => $idNote]);
             }
         }
     }
@@ -238,7 +238,7 @@ if(isset($_POST['supprimer_note'])){
                     <form method="post" style="display:inline-flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <input type="hidden" name="set_matiere" value="1">
                         <select name="idMatiere" onchange="this.form.submit()" style="min-width:220px;">
-                            <?php foreach($matieres as $m): ?>
+                            <?php foreach ($matieres as $m) : ?>
                                 <option value="<?= (int)$m['id_matiere'] ?>" <?= ((int)$idMatiere === (int)$m['id_matiere']) ? 'selected' : '' ?>><?= htmlspecialchars($m['nom_matiere']) ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -251,20 +251,20 @@ if(isset($_POST['supprimer_note'])){
                 <div class="dash-col">
                     <div class="card">
                         <h2>Liste des notes</h2>
-                        <?php if(!empty($waitMessages)): ?>
+                        <?php if (!empty($waitMessages)) : ?>
                             <div class="card" style="margin-top:12px;">
-                                <?php foreach($waitMessages as $msg): ?>
+                                <?php foreach ($waitMessages as $msg) : ?>
                                     <p><?= htmlspecialchars($msg) ?></p>
                                 <?php endforeach; ?>
                             </div>
-                        <?php else: ?>
+                        <?php else : ?>
                         <div>
                             <table class="table" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th>Nom</th>
                                             <th>Prénom</th>
-                                            <?php for($i=1; $i<=$maxNotes; $i++): ?>
+                                            <?php for ($i = 1; $i <= $maxNotes; $i++) : ?>
                                                 <th style="width:120px;">Note <?= (int)$i ?></th>
                                             <?php endfor; ?>
                                             <th style="width:140px;">Moyenne</th>
@@ -273,7 +273,7 @@ if(isset($_POST['supprimer_note'])){
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach($etudiants as $e): ?>
+                                        <?php foreach ($etudiants as $e) : ?>
                                             <?php $eid = (int)$e['id_etudiant']; ?>
                                             <tr>
                                                 <td><?= htmlspecialchars((string)$e['nom_etudiant']) ?></td>
@@ -281,27 +281,27 @@ if(isset($_POST['supprimer_note'])){
                                                 <?php
                                                     $arr = $notesByEtudiant[$eid] ?? [];
                                                 ?>
-                                                <?php for($i=0; $i<$maxNotes; $i++): ?>
+                                                <?php for ($i = 0; $i < $maxNotes; $i++) : ?>
                                                     <?php $v = isset($arr[$i]) ? $arr[$i] : null; ?>
                                                     <td>
-                                                        <?php if($v !== null): ?>
+                                                        <?php if ($v !== null) : ?>
                                                             <?php $vv = (float)$v; ?>
-                                                            <span class="<?= $vv >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($vv,2) ?></span>
-                                                        <?php else: ?>
+                                                            <span class="<?= $vv >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($vv, 2) ?></span>
+                                                        <?php else : ?>
                                                             -
                                                         <?php endif; ?>
                                                     </td>
                                                 <?php endfor; ?>
                                                 <?php $mg = $moyenneByEtudiant[$eid] ?? null; ?>
                                                 <td>
-                                                    <?php if($mg !== null): ?>
+                                                    <?php if ($mg !== null) : ?>
                                                         <?php $mm = (float)$mg; ?>
-                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
-                                                    <?php else: ?>
+                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm, 2) ?></span>
+                                                    <?php else : ?>
                                                         -
                                                     <?php endif; ?>
                                                 </td>
-                                                <?php $formId = 'noteRow'.$eid; ?>
+                                                <?php $formId = 'noteRow' . $eid; ?>
                                                 <td>
                                                     <input type="number" step="0.01" name="note_new" form="<?= htmlspecialchars($formId) ?>" value="" placeholder="Nouvelle note" style="width:100%;" />
                                                 </td>

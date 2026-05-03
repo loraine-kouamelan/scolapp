@@ -2,25 +2,25 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'ENSEIGNANT') {
     header("Location: connexion_enseignant.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
 }
 
-if(isset($_GET['reset'])){
+if (isset($_GET['reset'])) {
     unset($_SESSION['idFiliere'], $_SESSION['idClasse'], $_SESSION['idMatiere']);
     unset($_SESSION['selection_validated']);
     header("Location: selection.php");
     exit();
 }
 
-if(isset($_GET['edit'])){
+if (isset($_GET['edit'])) {
     unset($_SESSION['selection_validated']);
     header("Location: selection.php");
     exit();
@@ -28,7 +28,7 @@ if(isset($_GET['edit'])){
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 
-if(isset($_POST['choisir'])){
+if (isset($_POST['choisir'])) {
     $_SESSION['idFiliere'] = $_POST['idFiliere'];
     $_SESSION['idClasse'] = $_POST['idClasse'];
     $_SESSION['idMatiere'] = $_POST['idMatiere'];
@@ -38,9 +38,9 @@ if(isset($_POST['choisir'])){
 }
 
 $stmtEns = $pdo->prepare("SELECT nom_enseignant, prenom_enseignant FROM enseignant WHERE id_enseignant=:id LIMIT 1");
-$stmtEns->execute(['id'=>(int)$_SESSION['id']]);
+$stmtEns->execute(['id' => (int)$_SESSION['id']]);
 $ensInfo = $stmtEns->fetch(PDO::FETCH_ASSOC);
-$enseignantNom = $ensInfo ? trim(($ensInfo['nom_enseignant'] ?? '').' '.($ensInfo['prenom_enseignant'] ?? '')) : '';
+$enseignantNom = $ensInfo ? trim(($ensInfo['nom_enseignant'] ?? '') . ' ' . ($ensInfo['prenom_enseignant'] ?? '')) : '';
 
 $idFiliere = isset($_POST['idFiliere']) ? $_POST['idFiliere'] : (isset($_SESSION['idFiliere']) ? $_SESSION['idFiliere'] : null);
 $idClasse = isset($_POST['idClasse']) ? $_POST['idClasse'] : (isset($_SESSION['idClasse']) ? $_SESSION['idClasse'] : null);
@@ -51,29 +51,29 @@ $selectionValidated = !empty($_SESSION['selection_validated']);
 $filieres = $pdo->query("SELECT * FROM filiere ORDER BY nom_filiere")->fetchAll(PDO::FETCH_ASSOC);
 
 $waitMessages = [];
-if(empty($filieres)){
+if (empty($filieres)) {
     $waitMessages[] = "Aucune filière n'a encore été paramétrée. Veuillez attendre que le responsable configure les filières.";
 }
 
 $classes = [];
-if($idFiliere){
+if ($idFiliere) {
     $stmt = $pdo->prepare("SELECT * FROM classe WHERE id_filiere=:idFiliere ORDER BY nom_classe");
-    $stmt->execute(['idFiliere'=>$idFiliere]);
+    $stmt->execute(['idFiliere' => $idFiliere]);
     $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-if($idFiliere && empty($classes)){
+if ($idFiliere && empty($classes)) {
     $waitMessages[] = "Aucune classe n'est disponible pour cette filière. Veuillez attendre que le responsable ajoute des classes.";
 }
 
 $matieres = [];
-if($idClasse){
+if ($idClasse) {
     $stmtCM = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='classe_matiere' LIMIT 1");
     $stmtCM->execute();
     $hasClasseMatiere = (bool)$stmtCM->fetchColumn();
 
     $stmtClasse = $pdo->prepare("SELECT id_filiere FROM classe WHERE id_classe=:idClasse LIMIT 1");
-    $stmtClasse->execute(['idClasse'=>$idClasse]);
+    $stmtClasse->execute(['idClasse' => $idClasse]);
     $classeInfo = $stmtClasse->fetch(PDO::FETCH_ASSOC);
     $idFiliereClasse = $classeInfo ? (int)$classeInfo['id_filiere'] : 0;
 
@@ -81,24 +81,24 @@ if($idClasse){
         SELECT m.*
         FROM matiere m
         JOIN enseignement en ON en.id_matiere=m.id_matiere
-        ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "")."
+        " . ($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse" : "") . "
         WHERE m.id_filiere=:idFiliere AND en.id_enseignant=:idEnseignant
         ORDER BY m.nom_matiere
     ");
-    $params = ['idFiliere'=>$idFiliereClasse, 'idEnseignant'=>$_SESSION['id']];
-    if($hasClasseMatiere){
+    $params = ['idFiliere' => $idFiliereClasse, 'idEnseignant' => $_SESSION['id']];
+    if ($hasClasseMatiere) {
         $params['idClasse'] = (int)$idClasse;
     }
     $stmt->execute($params);
     $matieres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if(!$matieres){
+    if (!$matieres) {
         $stmt = $pdo->prepare(
-            "SELECT m.* FROM matiere m ".($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "").
+            "SELECT m.* FROM matiere m " . ($hasClasseMatiere ? "JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere AND cm.id_classe=:idClasse " : "") .
             "WHERE m.id_filiere=:idFiliere ORDER BY m.nom_matiere"
         );
-        $params = ['idFiliere'=>$idFiliereClasse];
-        if($hasClasseMatiere){
+        $params = ['idFiliere' => $idFiliereClasse];
+        if ($hasClasseMatiere) {
             $params['idClasse'] = (int)$idClasse;
         }
         $stmt->execute($params);
@@ -106,44 +106,44 @@ if($idClasse){
     }
 }
 
-if($idClasse && empty($matieres)){
+if ($idClasse && empty($matieres)) {
     $waitMessages[] = "Aucune matière n'est disponible pour cette classe. Veuillez attendre que le responsable paramètre les matières .";
 }
 
 $filiereNom = '-';
-if($idFiliere){
+if ($idFiliere) {
     $stmt = $pdo->prepare("SELECT nom_filiere FROM filiere WHERE id_filiere=:id LIMIT 1");
-    $stmt->execute(['id'=>(int)$idFiliere]);
+    $stmt->execute(['id' => (int)$idFiliere]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if($row && $row['nom_filiere'] !== null){
+    if ($row && $row['nom_filiere'] !== null) {
         $filiereNom = (string)$row['nom_filiere'];
     }
 }
 
 $classeNom = '-';
-if($idClasse){
+if ($idClasse) {
     $stmt = $pdo->prepare("SELECT nom_classe FROM classe WHERE id_classe=:id LIMIT 1");
-    $stmt->execute(['id'=>(int)$idClasse]);
+    $stmt->execute(['id' => (int)$idClasse]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if($row && $row['nom_classe'] !== null){
+    if ($row && $row['nom_classe'] !== null) {
         $classeNom = (string)$row['nom_classe'];
     }
 }
 
 $matiereNom = '-';
-if($idMatiere){
+if ($idMatiere) {
     $stmt = $pdo->prepare("SELECT nom_matiere FROM matiere WHERE id_matiere=:id LIMIT 1");
-    $stmt->execute(['id'=>(int)$idMatiere]);
+    $stmt->execute(['id' => (int)$idMatiere]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if($row && $row['nom_matiere'] !== null){
+    if ($row && $row['nom_matiere'] !== null) {
         $matiereNom = (string)$row['nom_matiere'];
     }
 }
 
 $notesParEtudiant = '-';
-if($idClasse && $idMatiere){
+if ($idClasse && $idMatiere) {
     $stmtMaxNotes = $pdo->prepare("\n        SELECT COALESCE(MAX(t.cnt), 0) AS nb\n        FROM (\n            SELECT n.id_etudiant, COUNT(*) AS cnt\n            FROM notes n\n            JOIN etudiant e ON e.id_etudiant=n.id_etudiant\n            WHERE e.id_classe=:idClasse AND n.id_matiere=:idMatiere\n            GROUP BY n.id_etudiant\n        ) t\n    ");
-    $stmtMaxNotes->execute(['idClasse'=>(int)$idClasse, 'idMatiere'=>(int)$idMatiere]);
+    $stmtMaxNotes->execute(['idClasse' => (int)$idClasse, 'idMatiere' => (int)$idMatiere]);
     $rowNotes = $stmtMaxNotes->fetch(PDO::FETCH_ASSOC);
     $notesParEtudiant = $rowNotes ? (string)(int)$rowNotes['nb'] : '0';
 }
@@ -203,7 +203,7 @@ if($idClasse && $idMatiere){
                     <p>Choisis la filière, la classe et la matière.</p>
                 </div>
                 <div class="dash-actions">
-                    <span class="dash-pill"><?= htmlspecialchars($enseignantNom !== '' ? $enseignantNom : ('Enseignant #'.(int)$_SESSION['id'])) ?></span>
+                    <span class="dash-pill"><?= htmlspecialchars($enseignantNom !== '' ? $enseignantNom : ('Enseignant #' . (int)$_SESSION['id'])) ?></span>
                 </div>
             </div>
 
@@ -212,42 +212,42 @@ if($idClasse && $idMatiere){
                     <div class="card">
                         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                             <h2 style="margin:0;">Sélection</h2>
-                            <?php if($selectionValidated && ($idFiliere || $idClasse || $idMatiere)): ?>
+                            <?php if ($selectionValidated && ($idFiliere || $idClasse || $idMatiere)) : ?>
                                 <div style="display:inline-flex; gap:10px; align-items:center;">
                                     <a class="btn btn-secondary" href="?edit=1">Modifier</a>
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <?php if(!empty($waitMessages)): ?>
+                        <?php if (!empty($waitMessages)) : ?>
                             <div class="card" style="margin-top:12px;">
-                                <?php foreach($waitMessages as $msg): ?>
+                                <?php foreach ($waitMessages as $msg) : ?>
                                     <p><?= htmlspecialchars($msg) ?></p>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
-                        <?php if(!$selectionValidated): ?>
+                        <?php if (!$selectionValidated) : ?>
                         <form method="post">
                             <label>Filière</label>
                             <select name="idFiliere" onchange="this.form.submit()" required>
                                 <option value="">-- Choisir --</option>
-                                <?php foreach($filieres as $f): ?>
-                                    <option value="<?= $f['id_filiere'] ?>" <?= ($idFiliere==$f['id_filiere']) ? 'selected' : '' ?>><?= htmlspecialchars($f['nom_filiere']) ?></option>
+                                <?php foreach ($filieres as $f) : ?>
+                                    <option value="<?= $f['id_filiere'] ?>" <?= ($idFiliere == $f['id_filiere']) ? 'selected' : '' ?>><?= htmlspecialchars($f['nom_filiere']) ?></option>
                                 <?php endforeach; ?>
                             </select>
 
                             <label>Classe</label>
                             <select name="idClasse" onchange="this.form.submit()" <?= $idFiliere ? '' : 'disabled' ?> required>
                                 <option value="">-- Choisir --</option>
-                                <?php foreach($classes as $c): ?>
-                                    <option value="<?= $c['id_classe'] ?>" <?= ($idClasse==$c['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars($c['nom_classe']) ?></option>
+                                <?php foreach ($classes as $c) : ?>
+                                    <option value="<?= $c['id_classe'] ?>" <?= ($idClasse == $c['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars($c['nom_classe']) ?></option>
                                 <?php endforeach; ?>
                             </select>
 
                             <label>Matière</label>
                             <select name="idMatiere" <?= $idClasse ? '' : 'disabled' ?> required>
                                 <option value="">-- Choisir --</option>
-                                <?php foreach($matieres as $m): ?>
-                                    <option value="<?= $m['id_matiere'] ?>" <?= ($idMatiere==$m['id_matiere']) ? 'selected' : '' ?>><?= htmlspecialchars($m['nom_matiere']) ?></option>
+                                <?php foreach ($matieres as $m) : ?>
+                                    <option value="<?= $m['id_matiere'] ?>" <?= ($idMatiere == $m['id_matiere']) ? 'selected' : '' ?>><?= htmlspecialchars($m['nom_matiere']) ?></option>
                                 <?php endforeach; ?>
                             </select>
 
@@ -255,7 +255,7 @@ if($idClasse && $idMatiere){
                                 <button class="btn btn-primary" name="choisir" type="submit">Valider</button>
                             </div>
                         </form>
-                        <?php else: ?>
+                        <?php else : ?>
                             <div class="stat-grid" style="margin-top:12px;">
                                 <div class="stat">
                                     <div class="label">Filière</div>

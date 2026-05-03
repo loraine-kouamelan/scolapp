@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -17,14 +17,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 $message_action = '';
 
-if(isset($_POST['supprimer_etudiant'])){
+if (isset($_POST['supprimer_etudiant'])) {
     $id = isset($_POST['id_etudiant']) ? (int)$_POST['id_etudiant'] : 0;
-    if($id > 0){
+    if ($id > 0) {
         try {
             $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
-            if($idNiveau <= 0){
+            if ($idNiveau <= 0) {
                 $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
-                $stmtN->execute(['id'=>$_SESSION['id']]);
+                $stmtN->execute(['id' => $_SESSION['id']]);
                 $r = $stmtN->fetch(PDO::FETCH_ASSOC);
                 $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
                 $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
@@ -36,35 +36,35 @@ if(isset($_POST['supprimer_etudiant'])){
                 JOIN classe c ON c.id_classe=e.id_classe
                 WHERE e.id_etudiant=:id AND c.id_niveau=:idNiveau
             ");
-            $stmt->execute(['id'=>$id, 'idNiveau'=>$idNiveau]);
+            $stmt->execute(['id' => $id, 'idNiveau' => $idNiveau]);
             $message_action = "Étudiant supprimé.";
-        } catch (PDOException $e){
+        } catch (PDOException $e) {
             $message_action = "Impossible de supprimer cet étudiant (il a des notes/absences).";
         }
     }
 }
 
-if(isset($_POST['modifier_etudiant'])){
+if (isset($_POST['modifier_etudiant'])) {
     $id = isset($_POST['id_etudiant']) ? (int)$_POST['id_etudiant'] : 0;
     $matricule = isset($_POST['matricule']) ? trim($_POST['matricule']) : '';
     $nom = isset($_POST['nom_etudiant']) ? trim($_POST['nom_etudiant']) : '';
     $prenom = isset($_POST['prenom_etudiant']) ? trim($_POST['prenom_etudiant']) : '';
     $idClasse = isset($_POST['id_classe']) ? (int)$_POST['id_classe'] : 0;
-    if($id > 0 && $nom !== '' && $prenom !== '' && $idClasse > 0 && $matricule !== ''){
+    if ($id > 0 && $nom !== '' && $prenom !== '' && $idClasse > 0 && $matricule !== '') {
         $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
-        if($idNiveau <= 0){
+        if ($idNiveau <= 0) {
             $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
-            $stmtN->execute(['id'=>$_SESSION['id']]);
+            $stmtN->execute(['id' => $_SESSION['id']]);
             $r = $stmtN->fetch(PDO::FETCH_ASSOC);
             $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
             $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
         }
 
         $stmtChk = $pdo->prepare("SELECT id_classe FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau LIMIT 1");
-        $stmtChk->execute(['idClasse'=>$idClasse, 'idNiveau'=>$idNiveau]);
+        $stmtChk->execute(['idClasse' => $idClasse, 'idNiveau' => $idNiveau]);
         $classeOk = $stmtChk->fetch(PDO::FETCH_ASSOC);
 
-        if(!$classeOk){
+        if (!$classeOk) {
             $message_action = "Classe non autorisée.";
         } else {
             $stmt = $pdo->prepare("
@@ -74,12 +74,12 @@ if(isset($_POST['modifier_etudiant'])){
                 WHERE e.id_etudiant=:id AND c.id_niveau=:idNiveau
             ");
             $stmt->execute([
-                'matricule'=>$matricule,
-                'nom'=>$nom,
-                'prenom'=>$prenom,
-                'idClasse'=>$idClasse,
-                'id'=>$id,
-                'idNiveau'=>$idNiveau
+                'matricule' => $matricule,
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'idClasse' => $idClasse,
+                'id' => $id,
+                'idNiveau' => $idNiveau
             ]);
             $message_action = "Étudiant modifié.";
         }
@@ -88,21 +88,21 @@ if(isset($_POST['modifier_etudiant'])){
     }
 }
 
-if(isset($_POST['creer_etudiant'])){
+if (isset($_POST['creer_etudiant'])) {
     $stmt = $pdo->prepare("INSERT INTO etudiant (matricule, nom_etudiant, prenom_etudiant, id_classe) VALUES (:matricule, :nom, :prenom, :idClasse)");
     $stmt->execute([
-        'matricule'=>$_POST['matricule'],
-        'nom'=>$_POST['nom_etudiant'],
-        'prenom'=>$_POST['prenom_etudiant'],
-        'idClasse'=>$_POST['id_classe']
+        'matricule' => $_POST['matricule'],
+        'nom' => $_POST['nom_etudiant'],
+        'prenom' => $_POST['prenom_etudiant'],
+        'idClasse' => $_POST['id_classe']
     ]);
 }
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
 $idFiliereResp = isset($_SESSION['id_filiere']) ? (int)$_SESSION['id_filiere'] : 0;
-if($idNiveau <= 0){
+if ($idNiveau <= 0) {
     $stmtN = $pdo->prepare("SELECT id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtN->execute(['id'=>$_SESSION['id']]);
+    $stmtN->execute(['id' => $_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
     $idFiliereResp = $r && $r['id_filiere'] !== null ? (int)$r['id_filiere'] : 0;
@@ -111,7 +111,7 @@ if($idNiveau <= 0){
 }
 
 $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-$stmtLib->execute(['id'=>$idNiveau]);
+$stmtLib->execute(['id' => $idNiveau]);
 $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
 $libelleNiveau = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
 
@@ -121,35 +121,33 @@ $hasDescriptionClasse = (bool)$stmtDescCol->fetchColumn();
 
 $stmtClasses = $pdo->prepare($idFiliereResp > 0
     ? "\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere\n    ORDER BY f.nom_filiere, c.nom_classe\n"
-    : "\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n"
-);
-$params = ['idNiveau'=>$idNiveau];
-if($idFiliereResp > 0){
+    : "\n    SELECT c.*, f.nom_filiere\n    FROM classe c\n    LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n    WHERE c.id_niveau=:idNiveau\n    ORDER BY f.nom_filiere, c.nom_classe\n");
+$params = ['idNiveau' => $idNiveau];
+if ($idFiliereResp > 0) {
     $params['idFiliere'] = $idFiliereResp;
 }
 $stmtClasses->execute($params);
 $classes = $stmtClasses->fetchAll(PDO::FETCH_ASSOC);
 $idClasseFiltre = isset($_GET['id_classe']) ? (int)$_GET['id_classe'] : 0;
 $classeFiltreInfo = null;
-if($idClasseFiltre > 0){
+if ($idClasseFiltre > 0) {
     $stmt = $pdo->prepare($idFiliereResp > 0
         ? "\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere\n        LIMIT 1\n    "
-        : "\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau\n        LIMIT 1\n    "
-    );
-    $params = ['id'=>$idClasseFiltre, 'idNiveau'=>$idNiveau];
-    if($idFiliereResp > 0){
+        : "\n        SELECT c.*, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_classe=:id AND c.id_niveau=:idNiveau\n        LIMIT 1\n    ");
+    $params = ['id' => $idClasseFiltre, 'idNiveau' => $idNiveau];
+    if ($idFiliereResp > 0) {
         $params['idFiliere'] = $idFiliereResp;
     }
     $stmt->execute($params);
     $classeFiltreInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-    if(!$classeFiltreInfo){
+    if (!$classeFiltreInfo) {
         $idClasseFiltre = 0;
     }
 }
 $etudiantEdit = null;
-if(isset($_GET['edit'])){
+if (isset($_GET['edit'])) {
     $idEdit = (int)$_GET['edit'];
-    if($idEdit > 0){
+    if ($idEdit > 0) {
         $stmt = $pdo->prepare($idFiliereResp > 0
             ? "
             SELECT e.*
@@ -164,10 +162,9 @@ if(isset($_GET['edit'])){
             JOIN classe c ON c.id_classe=e.id_classe
             WHERE e.id_etudiant=:id AND c.id_niveau=:idNiveau
             LIMIT 1
-        "
-        );
-        $params = ['id'=>$idEdit, 'idNiveau'=>$idNiveau];
-        if($idFiliereResp > 0){
+        ");
+        $params = ['id' => $idEdit, 'idNiveau' => $idNiveau];
+        if ($idFiliereResp > 0) {
             $params['idFiliere'] = $idFiliereResp;
         }
         $stmt->execute($params);
@@ -175,16 +172,16 @@ if(isset($_GET['edit'])){
     }
 }
 $etudiants = [];
-if($idClasseFiltre > 0){
+if ($idClasseFiltre > 0) {
     $stmt = $pdo->prepare("
         SELECT e.*, c.nom_classe AS classe
         FROM etudiant e
         JOIN classe c ON e.id_classe=c.id_classe
-        WHERE e.id_classe=:idClasse AND c.id_niveau=:idNiveau".($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "")."
+        WHERE e.id_classe=:idClasse AND c.id_niveau=:idNiveau" . ($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "") . "
         ORDER BY e.nom_etudiant, e.prenom_etudiant
     ");
-    $params = ['idClasse'=>$idClasseFiltre, 'idNiveau'=>$idNiveau];
-    if($idFiliereResp > 0){
+    $params = ['idClasse' => $idClasseFiltre, 'idNiveau' => $idNiveau];
+    if ($idFiliereResp > 0) {
         $params['idFiliere'] = $idFiliereResp;
     }
     $stmt->execute($params);
@@ -204,10 +201,9 @@ if($idClasseFiltre > 0){
         JOIN classe c ON e.id_classe=c.id_classe
         WHERE c.id_niveau=:idNiveau
         ORDER BY e.nom_etudiant, e.prenom_etudiant
-    "
-    );
-    $params = ['idNiveau'=>$idNiveau];
-    if($idFiliereResp > 0){
+    ");
+    $params = ['idNiveau' => $idNiveau];
+    if ($idFiliereResp > 0) {
         $params['idFiliere'] = $idFiliereResp;
     }
     $stmt->execute($params);
@@ -215,24 +211,25 @@ if($idClasseFiltre > 0){
 }
 
 $classesIndex = [];
-foreach($classes as $cl){
+foreach ($classes as $cl) {
     $classesIndex[(int)$cl['id_classe']] = $cl;
 }
 
-function classe_label($classeRow, $libelleNiveau, $hasDescriptionClasse){
+function classe_label($classeRow, $libelleNiveau, $hasDescriptionClasse)
+{
     $desc = $hasDescriptionClasse ? trim((string)($classeRow['description_classe'] ?? '')) : '';
     $base = $desc !== '' ? $desc : trim((string)($classeRow['nom_classe'] ?? ''));
     $prefix = trim((string)$libelleNiveau);
-    return $prefix !== '' ? ($prefix.' — '.$base) : $base;
+    return $prefix !== '' ? ($prefix . ' — ' . $base) : $base;
 }
 
 $etudiantsParClasse = [];
-foreach($etudiants as $e){
+foreach ($etudiants as $e) {
     $idCl = isset($e['id_classe']) ? (int)$e['id_classe'] : 0;
-    if($idCl <= 0){
+    if ($idCl <= 0) {
         continue;
     }
-    if(!isset($etudiantsParClasse[$idCl])){
+    if (!isset($etudiantsParClasse[$idCl])) {
         $etudiantsParClasse[$idCl] = [];
     }
     $etudiantsParClasse[$idCl][] = $e;
@@ -292,7 +289,7 @@ foreach($etudiants as $e){
                     <h1>Étudiants</h1>
                     <p>
                         Gestion des étudiants
-                        <?php if($idClasseFiltre > 0 && $classeFiltreInfo): ?>
+                        <?php if ($idClasseFiltre > 0 && $classeFiltreInfo) : ?>
                             — <?= htmlspecialchars(classe_label($classeFiltreInfo, $libelleNiveau, $hasDescriptionClasse)) ?>
                         <?php endif; ?>
                     </p>
@@ -303,7 +300,7 @@ foreach($etudiants as $e){
                 </div>
             </div>
 
-            <?php if($message_action !== ''): ?>
+            <?php if ($message_action !== '') : ?>
                 <div class="card" style="margin-top:16px;">
                     <p><?= htmlspecialchars($message_action) ?></p>
                 </div>
@@ -311,7 +308,7 @@ foreach($etudiants as $e){
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php if($etudiantEdit): ?>
+                    <?php if ($etudiantEdit) : ?>
                     <div class="card">
                         <h2>Modifier un étudiant</h2>
                         <form method="post">
@@ -320,8 +317,8 @@ foreach($etudiants as $e){
                             <input type="text" name="nom_etudiant" value="<?= htmlspecialchars($etudiantEdit['nom_etudiant'] ?? '') ?>" required>
                             <input type="text" name="prenom_etudiant" value="<?= htmlspecialchars($etudiantEdit['prenom_etudiant'] ?? '') ?>" required>
                             <select name="id_classe" required>
-                                <?php foreach($classes as $cl): ?>
-                                    <option value="<?= (int)$cl['id_classe'] ?>" <?= ((int)$etudiantEdit['id_classe']===(int)$cl['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
+                                <?php foreach ($classes as $cl) : ?>
+                                    <option value="<?= (int)$cl['id_classe'] ?>" <?= ((int)$etudiantEdit['id_classe'] === (int)$cl['id_classe']) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <div class="auth-actions">
@@ -344,8 +341,8 @@ foreach($etudiants as $e){
                                 <input type="text" name="nom_etudiant" placeholder="Nom" required>
                                 <input type="text" name="prenom_etudiant" placeholder="Prénom">
                                 <select name="id_classe">
-                                    <?php foreach($classes as $cl): ?>
-                                        <option value="<?= (int)$cl['id_classe'] ?>" <?= ($idClasseFiltre>0 && (int)$cl['id_classe']===(int)$idClasseFiltre) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
+                                    <?php foreach ($classes as $cl) : ?>
+                                        <option value="<?= (int)$cl['id_classe'] ?>" <?= ($idClasseFiltre > 0 && (int)$cl['id_classe'] === (int)$idClasseFiltre) ? 'selected' : '' ?>><?= htmlspecialchars(classe_label($cl, $libelleNiveau, $hasDescriptionClasse)) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="auth-actions">
@@ -354,16 +351,16 @@ foreach($etudiants as $e){
                             </form>
                         </div>
 
-                        <?php if($idClasseFiltre > 0): ?>
+                        <?php if ($idClasseFiltre > 0) : ?>
                             <?php
                                 $cl = $classeFiltreInfo;
                                 $labelClasse = $cl ? classe_label($cl, $libelleNiveau, $hasDescriptionClasse) : 'Classe';
                                 $liste = isset($etudiantsParClasse[$idClasseFiltre]) ? $etudiantsParClasse[$idClasseFiltre] : [];
                             ?>
                             <h3 style="margin-top:10px;">Classe : <?= htmlspecialchars($labelClasse) ?></h3>
-                            <?php if(empty($liste)): ?>
+                            <?php if (empty($liste)) : ?>
                                 <p style="margin-top:12px;">Aucun étudiant pour le moment.</p>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <div class="table-scroll">
                                     <table>
                                         <thead>
@@ -375,7 +372,7 @@ foreach($etudiants as $e){
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($liste as $e): ?>
+                                            <?php foreach ($liste as $e) : ?>
                                                 <tr>
                                                     <td><?= htmlspecialchars($e['matricule']) ?></td>
                                                     <td><?= htmlspecialchars($e['nom_etudiant'] ?? '') ?></td>
@@ -397,10 +394,10 @@ foreach($etudiants as $e){
                             <div class="auth-actions" style="margin-top:12px;">
                                 <a class="btn btn-secondary" href="etudiant.php">Fermer</a>
                             </div>
-                        <?php else: ?>
+                        <?php else : ?>
                             <p style="margin-top:10px;">Choisissez une classe puis cliquez sur <strong>Voir</strong> pour afficher la liste des étudiants.</p>
                             <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                                <?php foreach($classes as $cl): ?>
+                                <?php foreach ($classes as $cl) : ?>
                                     <?php $labelClasse = classe_label($cl, $libelleNiveau, $hasDescriptionClasse); ?>
                                     <div class="section" style="margin:0;">
                                         <h3 style="margin:0 0 10px 0;"><?= htmlspecialchars($labelClasse) ?></h3>

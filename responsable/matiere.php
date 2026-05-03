@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -19,9 +19,9 @@ $message_action = '';
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
 $idFiliereResp = isset($_SESSION['id_filiere']) ? (int)$_SESSION['id_filiere'] : 0;
-if($idNiveau <= 0){
+if ($idNiveau <= 0) {
     $stmtN = $pdo->prepare("SELECT id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtN->execute(['id'=>$_SESSION['id']]);
+    $stmtN->execute(['id' => $_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
     $idFiliereResp = $r && $r['id_filiere'] !== null ? (int)$r['id_filiere'] : 0;
@@ -30,7 +30,7 @@ if($idNiveau <= 0){
 }
 
 $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-$stmtLib->execute(['id'=>$idNiveau]);
+$stmtLib->execute(['id' => $idNiveau]);
 $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
 $libelleNiveau = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
 
@@ -38,96 +38,97 @@ $stmtCM = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_sch
 $stmtCM->execute();
 $hasClasseMatiere = (bool)$stmtCM->fetchColumn();
 
-function filiere_label($nomFiliere, $libelleNiveau){
+function filiere_label($nomFiliere, $libelleNiveau)
+{
     $nom = trim((string)$nomFiliere);
     $niv = trim((string)$libelleNiveau);
     $lf = mb_strtolower($nom);
     $ln = mb_strtolower($niv);
 
-    if($nom === ''){
+    if ($nom === '') {
         return '';
     }
 
     $niveauCourt = '';
-    if(preg_match('/\b(licen[cs]e|master)\s*(\d)\b/i', $niv, $m)){
-        $niveauCourt = mb_strtolower($m[1].' '.$m[2]);
+    if (preg_match('/\b(licen[cs]e|master)\s*(\d)\b/i', $niv, $m)) {
+        $niveauCourt = mb_strtolower($m[1] . ' ' . $m[2]);
     }
 
-    if($niveauCourt === ''){
-        return $ln !== '' && strpos($lf, $ln) === 0 ? $lf : ($ln !== '' ? ($ln.' '.$lf) : $lf);
+    if ($niveauCourt === '') {
+        return $ln !== '' && strpos($lf, $ln) === 0 ? $lf : ($ln !== '' ? ($ln . ' ' . $lf) : $lf);
     }
 
-    $resteLibelle = trim(preg_replace('/^'.preg_quote($niveauCourt, '/').'\s*/i', '', $ln));
+    $resteLibelle = trim(preg_replace('/^' . preg_quote($niveauCourt, '/') . '\s*/i', '', $ln));
 
-    if(strpos($lf, $niveauCourt) === 0){
+    if (strpos($lf, $niveauCourt) === 0) {
         $apres = trim(mb_substr($lf, mb_strlen($niveauCourt)));
-        if($resteLibelle !== '' && strpos($apres, $resteLibelle) === 0){
+        if ($resteLibelle !== '' && strpos($apres, $resteLibelle) === 0) {
             $apres = trim(mb_substr($apres, mb_strlen($resteLibelle)));
         }
-        return trim($niveauCourt.' '.$apres);
+        return trim($niveauCourt . ' ' . $apres);
     }
 
-    if($resteLibelle !== '' && strpos($lf, $resteLibelle) === 0){
+    if ($resteLibelle !== '' && strpos($lf, $resteLibelle) === 0) {
         $lf = trim(mb_substr($lf, mb_strlen($resteLibelle)));
     }
 
-    return trim($niveauCourt.' '.$lf);
+    return trim($niveauCourt . ' ' . $lf);
 }
 
-if(isset($_POST['supprimer_matiere'])){
+if (isset($_POST['supprimer_matiere'])) {
     $id = isset($_POST['id_matiere']) ? (int)$_POST['id_matiere'] : 0;
-    if($id > 0){
-        if($hasClasseMatiere){
+    if ($id > 0) {
+        if ($hasClasseMatiere) {
             $idClasse = isset($_POST['id_classe']) ? (int)$_POST['id_classe'] : 0;
-            if($idClasse <= 0){
+            if ($idClasse <= 0) {
                 $message_action = "Classe invalide.";
             } else {
                 $stmtChk = $pdo->prepare(
-                    "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau".
-                    ($idFiliereResp > 0 ? " AND id_filiere=:idFiliere" : "").
+                    "SELECT 1 FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau" .
+                    ($idFiliereResp > 0 ? " AND id_filiere=:idFiliere" : "") .
                     " LIMIT 1"
                 );
-                $params = ['idClasse'=>$idClasse, 'idNiveau'=>$idNiveau];
-                if($idFiliereResp > 0){
+                $params = ['idClasse' => $idClasse, 'idNiveau' => $idNiveau];
+                if ($idFiliereResp > 0) {
                     $params['idFiliere'] = $idFiliereResp;
                 }
                 $stmtChk->execute($params);
                 $ok = (bool)$stmtChk->fetchColumn();
-                if(!$ok){
+                if (!$ok) {
                     $message_action = "Classe invalide.";
                 } else {
                     $stmt = $pdo->prepare("DELETE FROM classe_matiere WHERE id_classe=:idClasse AND id_matiere=:idMatiere");
-                    $stmt->execute(['idClasse'=>$idClasse, 'idMatiere'=>$id]);
+                    $stmt->execute(['idClasse' => $idClasse, 'idMatiere' => $id]);
                     $message_action = "Matière retirée de la classe.";
                 }
             }
         } else {
             try {
                 $stmt = $pdo->prepare("DELETE FROM matiere WHERE id_matiere=:id");
-                $stmt->execute(['id'=>$id]);
+                $stmt->execute(['id' => $id]);
                 $message_action = "Matière supprimée.";
-            } catch (PDOException $e){
+            } catch (PDOException $e) {
                 $message_action = "Impossible de supprimer cette matière (elle est utilisée ailleurs).";
             }
         }
     }
 }
 
-    if(isset($_POST['modifier_matiere'])){
+if (isset($_POST['modifier_matiere'])) {
     $id = isset($_POST['id_matiere']) ? (int)$_POST['id_matiere'] : 0;
     $nom = isset($_POST['nom_matiere']) ? trim($_POST['nom_matiere']) : '';
     $idFiliere = isset($_POST['id_filiere']) ? (int)$_POST['id_filiere'] : 0;
 
-    if($id > 0 && $nom !== '' && $idFiliere > 0){
+    if ($id > 0 && $nom !== '' && $idFiliere > 0) {
         $stmt = $pdo->prepare("
             UPDATE matiere
             SET nom_matiere=:nom, id_filiere=:idFiliere
             WHERE id_matiere=:id
         ");
         $stmt->execute([
-            'nom'=>$nom,
-            'idFiliere'=>$idFiliere,
-            'id'=>$id
+            'nom' => $nom,
+            'idFiliere' => $idFiliere,
+            'id' => $id
         ]);
         $message_action = "Matière modifiée.";
     } else {
@@ -135,47 +136,47 @@ if(isset($_POST['supprimer_matiere'])){
     }
 }
 
-if(isset($_POST['creer_matiere'])){
+if (isset($_POST['creer_matiere'])) {
     $nom = isset($_POST['nom_matiere']) ? trim((string)$_POST['nom_matiere']) : '';
     $idClasse = isset($_POST['id_classe']) ? (int)$_POST['id_classe'] : 0;
-    if($nom === '' || $idClasse <= 0){
+    if ($nom === '' || $idClasse <= 0) {
         $message_action = "Veuillez renseigner une classe et un nom de matière.";
     } else {
         $stmtClasse = $pdo->prepare(
-            "SELECT id_filiere FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau".
-            ($idFiliereResp > 0 ? " AND id_filiere=:idFiliere" : "").
+            "SELECT id_filiere FROM classe WHERE id_classe=:idClasse AND id_niveau=:idNiveau" .
+            ($idFiliereResp > 0 ? " AND id_filiere=:idFiliere" : "") .
             " LIMIT 1"
         );
-        $params = ['idClasse'=>$idClasse, 'idNiveau'=>$idNiveau];
-        if($idFiliereResp > 0){
+        $params = ['idClasse' => $idClasse, 'idNiveau' => $idNiveau];
+        if ($idFiliereResp > 0) {
             $params['idFiliere'] = $idFiliereResp;
         }
         $stmtClasse->execute($params);
         $cl = $stmtClasse->fetch(PDO::FETCH_ASSOC);
         $idFiliere = $cl ? (int)$cl['id_filiere'] : 0;
-        if($idFiliere <= 0){
+        if ($idFiliere <= 0) {
             $message_action = "Classe invalide.";
         } else {
             $stmtFind = $pdo->prepare("SELECT id_matiere FROM matiere WHERE LOWER(nom_matiere)=LOWER(:nom) AND id_filiere=:idFiliere LIMIT 1");
-            $stmtFind->execute(['nom'=>$nom, 'idFiliere'=>$idFiliere]);
+            $stmtFind->execute(['nom' => $nom, 'idFiliere' => $idFiliere]);
             $found = $stmtFind->fetch(PDO::FETCH_ASSOC);
-            if($found){
+            if ($found) {
                 $idMatiere = (int)$found['id_matiere'];
             } else {
                 $stmt = $pdo->prepare("INSERT INTO matiere (nom_matiere, id_filiere) VALUES (:nom, :idFiliere)");
                 $stmt->execute([
-                    'nom'=>$nom,
-                    'idFiliere'=>$idFiliere
+                    'nom' => $nom,
+                    'idFiliere' => $idFiliere
                 ]);
                 $idMatiere = (int)$pdo->lastInsertId();
             }
 
-            if($hasClasseMatiere){
+            if ($hasClasseMatiere) {
                 try {
                     $stmtLink = $pdo->prepare("INSERT INTO classe_matiere (id_classe, id_matiere) VALUES (:idClasse, :idMatiere)");
-                    $stmtLink->execute(['idClasse'=>$idClasse, 'idMatiere'=>$idMatiere]);
+                    $stmtLink->execute(['idClasse' => $idClasse, 'idMatiere' => $idMatiere]);
                     $message_action = "Matière ajoutée à la classe.";
-                } catch (PDOException $e){
+                } catch (PDOException $e) {
                     $message_action = "Matière déjà ajoutée à cette classe.";
                 }
             } else {
@@ -187,11 +188,11 @@ if(isset($_POST['creer_matiere'])){
 
 
 $filieres = [];
-if($idFiliereResp > 0){
+if ($idFiliereResp > 0) {
     $stmtFilieres = $pdo->prepare("SELECT * FROM filiere WHERE id_filiere=:id LIMIT 1");
-    $stmtFilieres->execute(['id'=>$idFiliereResp]);
+    $stmtFilieres->execute(['id' => $idFiliereResp]);
     $f = $stmtFilieres->fetch(PDO::FETCH_ASSOC);
-    if($f){
+    if ($f) {
         $filieres = [$f];
     }
 } else {
@@ -202,26 +203,25 @@ if($idFiliereResp > 0){
         WHERE c.id_niveau=:idNiveau
         ORDER BY f.nom_filiere
     ");
-    $stmtFilieres->execute(['idNiveau'=>$idNiveau]);
+    $stmtFilieres->execute(['idNiveau' => $idNiveau]);
     $filieres = $stmtFilieres->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $stmtClasses = $pdo->prepare($idFiliereResp > 0
     ? "\n        SELECT c.id_classe, c.id_filiere, c.nom_classe, c.description_classe, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_niveau=:idNiveau AND c.id_filiere=:idFiliere\n        ORDER BY c.nom_classe\n    "
-    : "\n        SELECT c.id_classe, c.id_filiere, c.nom_classe, c.description_classe, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_niveau=:idNiveau\n        ORDER BY f.nom_filiere, c.nom_classe\n    "
-);
-$params = ['idNiveau'=>$idNiveau];
-if($idFiliereResp > 0){
+    : "\n        SELECT c.id_classe, c.id_filiere, c.nom_classe, c.description_classe, f.nom_filiere\n        FROM classe c\n        LEFT JOIN filiere f ON f.id_filiere=c.id_filiere\n        WHERE c.id_niveau=:idNiveau\n        ORDER BY f.nom_filiere, c.nom_classe\n    ");
+$params = ['idNiveau' => $idNiveau];
+if ($idFiliereResp > 0) {
     $params['idFiliere'] = $idFiliereResp;
 }
 $stmtClasses->execute($params);
 $classes = $stmtClasses->fetchAll(PDO::FETCH_ASSOC);
 $matiereEdit = null;
-if(isset($_GET['edit'])){
+if (isset($_GET['edit'])) {
     $idEdit = (int)$_GET['edit'];
-    if($idEdit > 0){
+    if ($idEdit > 0) {
         $stmt = $pdo->prepare("SELECT * FROM matiere WHERE id_matiere=:id LIMIT 1");
-        $stmt->execute(['id'=>$idEdit]);
+        $stmt->execute(['id' => $idEdit]);
         $matiereEdit = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
@@ -232,7 +232,7 @@ $stmtMatieres = $pdo->prepare($hasClasseMatiere
     JOIN filiere f ON m.id_filiere=f.id_filiere
     JOIN classe_matiere cm ON cm.id_matiere=m.id_matiere
     JOIN classe c ON c.id_classe=cm.id_classe
-    WHERE c.id_niveau=:idNiveau".($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "")."
+    WHERE c.id_niveau=:idNiveau" . ($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "") . "
     ORDER BY f.nom_filiere, m.nom_matiere
     "
     : ($idFiliereResp > 0
@@ -251,25 +251,24 @@ $stmtMatieres = $pdo->prepare($hasClasseMatiere
         WHERE c.id_niveau=:idNiveau
         ORDER BY f.nom_filiere, m.nom_matiere
         "
-    )
-);
-$params = ['idNiveau'=>$idNiveau];
-if(!$hasClasseMatiere && $idFiliereResp > 0){
-    $params = ['idFiliere'=>$idFiliereResp];
-} else if($hasClasseMatiere && $idFiliereResp > 0){
+    ));
+$params = ['idNiveau' => $idNiveau];
+if (!$hasClasseMatiere && $idFiliereResp > 0) {
+    $params = ['idFiliere' => $idFiliereResp];
+} elseif ($hasClasseMatiere && $idFiliereResp > 0) {
     $params['idFiliere'] = $idFiliereResp;
 }
 $stmtMatieres->execute($params);
 $matieres = $stmtMatieres->fetchAll(PDO::FETCH_ASSOC);
 
 $matieresByFiliereId = [];
-if(is_array($matieres)){
-    foreach($matieres as $m){
+if (is_array($matieres)) {
+    foreach ($matieres as $m) {
         $idF = isset($m['id_filiere']) ? (int)$m['id_filiere'] : 0;
-        if($idF <= 0){
+        if ($idF <= 0) {
             continue;
         }
-        if(!isset($matieresByFiliereId[$idF])){
+        if (!isset($matieresByFiliereId[$idF])) {
             $matieresByFiliereId[$idF] = [];
         }
         $matieresByFiliereId[$idF][] = $m;
@@ -336,7 +335,7 @@ if(is_array($matieres)){
                 </div>
             </div>
 
-            <?php if($message_action !== ''): ?>
+            <?php if ($message_action !== '') : ?>
                 <div class="card" style="margin-top:16px;">
                     <p><?= htmlspecialchars($message_action) ?></p>
                 </div>
@@ -344,15 +343,15 @@ if(is_array($matieres)){
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php if($matiereEdit): ?>
+                    <?php if ($matiereEdit) : ?>
                     <div class="card">
                         <h2>Modifier une matière</h2>
                         <form method="post">
                             <input type="hidden" name="id_matiere" value="<?= (int)$matiereEdit['id_matiere'] ?>">
                             <input type="text" name="nom_matiere" value="<?= htmlspecialchars($matiereEdit['nom_matiere']) ?>" required>
                             <select name="id_filiere" required>
-                                <?php foreach($filieres as $f): ?>
-                                    <option value="<?= (int)$f['id_filiere'] ?>" <?= ((int)$matiereEdit['id_filiere']===(int)$f['id_filiere']) ? 'selected' : '' ?>><?= htmlspecialchars(filiere_label($f['nom_filiere'], $libelleNiveau)) ?></option>
+                                <?php foreach ($filieres as $f) : ?>
+                                    <option value="<?= (int)$f['id_filiere'] ?>" <?= ((int)$matiereEdit['id_filiere'] === (int)$f['id_filiere']) ? 'selected' : '' ?>><?= htmlspecialchars(filiere_label($f['nom_filiere'], $libelleNiveau)) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <div class="auth-actions">
@@ -374,11 +373,11 @@ if(is_array($matieres)){
                                 <input type="text" name="nom_matiere" placeholder="Nom matière" required>
                                 <select name="id_classe" required>
                                     <option value="">-- Classe --</option>
-                                    <?php foreach($classes as $c): ?>
+                                    <?php foreach ($classes as $c) : ?>
                                         <?php
                                             $desc = isset($c['description_classe']) ? trim((string)$c['description_classe']) : '';
                                             $base = $desc !== '' ? $desc : (string)$c['nom_classe'];
-                                            $label = $libelleNiveau !== '' ? ($libelleNiveau.' — '.$base) : $base;
+                                            $label = $libelleNiveau !== '' ? ($libelleNiveau . ' — ' . $base) : $base;
                                         ?>
                                         <option value="<?= (int)$c['id_classe'] ?>"><?= htmlspecialchars($label) ?></option>
                                     <?php endforeach; ?>
@@ -389,32 +388,32 @@ if(is_array($matieres)){
                             </form>
                         </div>
 
-                        <?php if(empty($classes)): ?>
+                        <?php if (empty($classes)) : ?>
                             <p style="margin-top:12px;">Aucune classe pour le moment. Ajoutez d'abord une classe.</p>
-                        <?php else: ?>
-                        <?php foreach($classes as $c): ?>
-                            <?php
+                        <?php else : ?>
+                            <?php foreach ($classes as $c) : ?>
+                                <?php
                                 $idF = isset($c['id_filiere']) ? (int)$c['id_filiere'] : 0;
-                                if($hasClasseMatiere){
+                                if ($hasClasseMatiere) {
                                     $stmtItems = $pdo->prepare("\n                                        SELECT m.*\n                                        FROM classe_matiere cm\n                                        JOIN matiere m ON m.id_matiere=cm.id_matiere\n                                        WHERE cm.id_classe=:idClasse\n                                        ORDER BY m.nom_matiere\n                                    ");
-                                    $stmtItems->execute(['idClasse'=>(int)$c['id_classe']]);
+                                    $stmtItems->execute(['idClasse' => (int)$c['id_classe']]);
                                     $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                                 } else {
                                     $items = $idF > 0 && isset($matieresByFiliereId[$idF]) ? $matieresByFiliereId[$idF] : [];
                                 }
                                 $desc = isset($c['description_classe']) ? trim((string)$c['description_classe']) : '';
                                 $base = $desc !== '' ? $desc : (string)$c['nom_classe'];
-                                $labelClasse = $libelleNiveau !== '' ? ($libelleNiveau.' — '.$base) : $base;
-                            ?>
+                                $labelClasse = $libelleNiveau !== '' ? ($libelleNiveau . ' — ' . $base) : $base;
+                                ?>
                             <details style="margin-top:12px;">
                                 <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
                                     <span><strong><?= htmlspecialchars($labelClasse) ?></strong></span>
                                     <span class="btn btn-secondary" data-details-label style="padding:8px 12px;">Voir</span>
                                 </summary>
                                 <div style="margin-top:10px;">
-                                    <?php if(empty($items)): ?>
+                                    <?php if (empty($items)) : ?>
                                         <p>Aucune matière.</p>
-                                    <?php else: ?>
+                                    <?php else : ?>
                                     <table>
                                         <thead>
                                             <tr>
@@ -423,7 +422,7 @@ if(is_array($matieres)){
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach($items as $m): ?>
+                                            <?php foreach ($items as $m) : ?>
                                                 <tr>
                                                     <td><?= htmlspecialchars($m['nom_matiere']) ?></td>
                                                     <td>
@@ -441,7 +440,7 @@ if(is_array($matieres)){
                                     <?php endif; ?>
                                 </div>
                             </details>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>

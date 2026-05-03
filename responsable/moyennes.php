@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -19,9 +19,9 @@ $showResults = true;
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
 $idFiliereResp = isset($_SESSION['id_filiere']) ? (int)$_SESSION['id_filiere'] : 0;
-if($idNiveau <= 0){
+if ($idNiveau <= 0) {
     $stmtN = $pdo->prepare("SELECT id_niveau, id_filiere FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtN->execute(['id'=>$_SESSION['id']]);
+    $stmtN->execute(['id' => $_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
     $idFiliereResp = $r && $r['id_filiere'] !== null ? (int)$r['id_filiere'] : 0;
@@ -30,9 +30,9 @@ if($idNiveau <= 0){
 }
 
 $libelleNiveau = '';
-if($idNiveau > 0){
+if ($idNiveau > 0) {
     $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-    $stmtLib->execute(['id'=>$idNiveau]);
+    $stmtLib->execute(['id' => $idNiveau]);
     $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
     $libelleNiveau = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
 }
@@ -48,23 +48,23 @@ $stmtMoyennes = $pdo->prepare("
     JOIN classe c ON e.id_classe=c.id_classe
     LEFT JOIN filiere f ON f.id_filiere=c.id_filiere
     LEFT JOIN notes n ON n.id_etudiant=e.id_etudiant
-    WHERE c.id_niveau=:idNiveau".($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "")."
+    WHERE c.id_niveau=:idNiveau" . ($idFiliereResp > 0 ? " AND c.id_filiere=:idFiliere" : "") . "
     GROUP BY e.id_etudiant
     ORDER BY c.nom_classe, e.nom_etudiant, e.prenom_etudiant
 ");
-$params = ['idNiveau'=>$idNiveau];
-if($idFiliereResp > 0){
+$params = ['idNiveau' => $idNiveau];
+if ($idFiliereResp > 0) {
     $params['idFiliere'] = $idFiliereResp;
 }
 $stmtMoyennes->execute($params);
 $notesMoyennes = $stmtMoyennes->fetchAll(PDO::FETCH_ASSOC);
 
 $moyennesParClasse = [];
-foreach($notesMoyennes as $row){
+foreach ($notesMoyennes as $row) {
     $desc = isset($row['description_classe']) ? trim((string)$row['description_classe']) : '';
     $base = $desc !== '' ? $desc : (string)($row['classe'] ?? '');
-    $label = $libelleNiveau !== '' ? ($libelleNiveau.' — '.$base) : $base;
-    if(!isset($moyennesParClasse[$label])){
+    $label = $libelleNiveau !== '' ? ($libelleNiveau . ' — ' . $base) : $base;
+    if (!isset($moyennesParClasse[$label])) {
         $moyennesParClasse[$label] = [];
     }
     $moyennesParClasse[$label][] = $row;
@@ -133,10 +133,10 @@ foreach($notesMoyennes as $row){
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
                     <div class="card">
-                        <?php if(empty($moyennesParClasse)): ?>
+                        <?php if (empty($moyennesParClasse)) : ?>
                             <p>Aucune moyenne pour le moment.</p>
-                        <?php else: ?>
-                            <?php foreach($moyennesParClasse as $nomClasse => $rows): ?>
+                        <?php else : ?>
+                            <?php foreach ($moyennesParClasse as $nomClasse => $rows) : ?>
                                 <details style="margin-top:12px;">
                                     <summary style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; padding:10px 12px; border-radius:14px; background: rgba(31,42,68,0.03); border:1px solid rgba(31,42,68,0.08);">
                                         <span><strong>Classe : <?= htmlspecialchars($nomClasse) ?></strong></span>
@@ -154,14 +154,14 @@ foreach($notesMoyennes as $row){
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach($rows as $n): ?>
+                                        <?php foreach ($rows as $n) : ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($n['nom_etudiant']) ?></td>
                                                 <td><?= htmlspecialchars($n['prenom_etudiant']) ?></td>
                                                 <td>
-                                                    <?php if($n['moyenne_generale'] !== null): ?>
+                                                    <?php if ($n['moyenne_generale'] !== null) : ?>
                                                         <?php $mm = (float)$n['moyenne_generale']; ?>
-                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm,2) ?></span>
+                                                        <span class="<?= $mm >= 10 ? 'score-ok' : 'score-ko' ?>"><?= round($mm, 2) ?></span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>

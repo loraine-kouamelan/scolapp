@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -18,65 +18,65 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $message_action = '';
 
 $idNiveau = isset($_SESSION['id_niveau']) ? (int)$_SESSION['id_niveau'] : 0;
-if($idNiveau <= 0){
+if ($idNiveau <= 0) {
     $stmtN = $pdo->prepare("SELECT id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
-    $stmtN->execute(['id'=>$_SESSION['id']]);
+    $stmtN->execute(['id' => $_SESSION['id']]);
     $r = $stmtN->fetch(PDO::FETCH_ASSOC);
     $idNiveau = $r && $r['id_niveau'] !== null ? (int)$r['id_niveau'] : 0;
     $_SESSION['id_niveau'] = $idNiveau > 0 ? $idNiveau : null;
 }
 
-if(isset($_POST['supprimer_filiere'])){
+if (isset($_POST['supprimer_filiere'])) {
     $id = isset($_POST['id_filiere']) ? (int)$_POST['id_filiere'] : 0;
-    if($id > 0){
+    if ($id > 0) {
         try {
             $stmt = $pdo->prepare("DELETE FROM filiere WHERE id_filiere=:id");
-            $stmt->execute(['id'=>$id]);
+            $stmt->execute(['id' => $id]);
             $message_action = "Filière supprimée.";
-        } catch (PDOException $e){
+        } catch (PDOException $e) {
             $message_action = "Impossible de supprimer cette filière (elle est utilisée ailleurs).";
         }
     }
 }
 
-if(isset($_POST['modifier_filiere'])){
+if (isset($_POST['modifier_filiere'])) {
     $id = isset($_POST['id_filiere']) ? (int)$_POST['id_filiere'] : 0;
     $nom = isset($_POST['nom_filiere']) ? trim($_POST['nom_filiere']) : '';
-    if($id > 0 && $nom !== ''){
+    if ($id > 0 && $nom !== '') {
         $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-        $stmtLib->execute(['id'=>$idNiveau]);
+        $stmtLib->execute(['id' => $idNiveau]);
         $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
         $lib = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
-        if($lib !== ''){
-            $nom = $lib.' '.ltrim($nom);
+        if ($lib !== '') {
+            $nom = $lib . ' ' . ltrim($nom);
         }
         $stmt = $pdo->prepare("UPDATE filiere SET nom_filiere=:nom WHERE id_filiere=:id");
-        $stmt->execute(['nom'=>$nom,'id'=>$id]);
+        $stmt->execute(['nom' => $nom,'id' => $id]);
         $message_action = "Filière modifiée.";
     } else {
         $message_action = "Veuillez renseigner un nom valide.";
     }
 }
 
-if(isset($_POST['creer_filiere'])){
+if (isset($_POST['creer_filiere'])) {
     $stmtLib = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-    $stmtLib->execute(['id'=>$idNiveau]);
+    $stmtLib->execute(['id' => $idNiveau]);
     $niv = $stmtLib->fetch(PDO::FETCH_ASSOC);
     $lib = $niv && $niv['libelle_niveau'] ? trim((string)$niv['libelle_niveau']) : '';
     $nom = trim((string)($_POST['nom_filiere'] ?? ''));
-    if($lib !== ''){
-        $nom = $lib.' '.ltrim($nom);
+    if ($lib !== '') {
+        $nom = $lib . ' ' . ltrim($nom);
     }
     $stmt = $pdo->prepare("INSERT INTO filiere (nom_filiere) VALUES (:nom)");
-    $stmt->execute(['nom'=>$nom]);
+    $stmt->execute(['nom' => $nom]);
 }
 
 $filiereEdit = null;
-if(isset($_GET['edit'])){
+if (isset($_GET['edit'])) {
     $idEdit = (int)$_GET['edit'];
-    if($idEdit > 0){
+    if ($idEdit > 0) {
         $stmt = $pdo->prepare("SELECT * FROM filiere WHERE id_filiere=:id LIMIT 1");
-        $stmt->execute(['id'=>$idEdit]);
+        $stmt->execute(['id' => $idEdit]);
         $filiereEdit = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
@@ -88,7 +88,7 @@ $stmtFilieres = $pdo->prepare("
     WHERE c.id_niveau=:idNiveau
     ORDER BY f.nom_filiere
 ");
-$stmtFilieres->execute(['idNiveau'=>$idNiveau]);
+$stmtFilieres->execute(['idNiveau' => $idNiveau]);
 $filieres = $stmtFilieres->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -151,7 +151,7 @@ $filieres = $stmtFilieres->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <?php if($message_action !== ''): ?>
+            <?php if ($message_action !== '') : ?>
                 <div class="card" style="margin-top:16px;">
                     <p><?= htmlspecialchars($message_action) ?></p>
                 </div>
@@ -159,7 +159,7 @@ $filieres = $stmtFilieres->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="dash-grid" style="grid-template-columns: 1fr;">
                 <div class="dash-col">
-                    <?php if($filiereEdit): ?>
+                    <?php if ($filiereEdit) : ?>
                     <div class="card">
                         <h2>Modifier une filière</h2>
                         <form method="post">
@@ -196,7 +196,7 @@ $filieres = $stmtFilieres->fetchAll(PDO::FETCH_ASSOC);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach($filieres as $f): ?>
+                                <?php foreach ($filieres as $f) : ?>
                                     <tr>
                                         <td><?= htmlspecialchars($f['nom_filiere']) ?></td>
                                         <td>

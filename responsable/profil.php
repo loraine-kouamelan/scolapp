@@ -2,12 +2,12 @@
 session_start();
 require '../bd.php';
 
-if(!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE'){
+if (!isset($_SESSION['id']) || $_SESSION['role'] != 'RESPONSABLE') {
     header("Location: connexion_principal.php");
     exit();
 }
 
-if(isset($_GET['logout'])){
+if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: ../index.php");
     exit();
@@ -18,24 +18,24 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $message = '';
 
 $stmt = $pdo->prepare("SELECT id_responsable, nom_responsable, prenom_responsable, mdp_responsable, id_niveau FROM responsable WHERE id_responsable=:id LIMIT 1");
-$stmt->execute(['id'=>$_SESSION['id']]);
+$stmt->execute(['id' => $_SESSION['id']]);
 $profil = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if(!$profil){
+if (!$profil) {
     session_destroy();
     header("Location: connexion_principal.php");
     exit();
 }
 
 $niveauLibelle = '';
-if($profil['id_niveau'] !== null){
+if ($profil['id_niveau'] !== null) {
     $stmtN = $pdo->prepare("SELECT libelle_niveau FROM niveau WHERE id_niveau=:id LIMIT 1");
-    $stmtN->execute(['id'=>(int)$profil['id_niveau']]);
+    $stmtN->execute(['id' => (int)$profil['id_niveau']]);
     $n = $stmtN->fetch(PDO::FETCH_ASSOC);
     $niveauLibelle = $n ? (string)$n['libelle_niveau'] : '';
 }
 
-if(isset($_POST['enregistrer_profil'])){
+if (isset($_POST['enregistrer_profil'])) {
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
 
@@ -43,26 +43,26 @@ if(isset($_POST['enregistrer_profil'])){
     $nouveauMdp = isset($_POST['nouveau_mdp']) ? (string)$_POST['nouveau_mdp'] : '';
     $confirmer = isset($_POST['confirmer_mdp']) ? (string)$_POST['confirmer_mdp'] : '';
 
-    if($nom === '' || $prenom === ''){
+    if ($nom === '' || $prenom === '') {
         $message = "Veuillez renseigner le nom et le prénom.";
     } else {
         try {
-            if($nouveauMdp !== '' || $confirmer !== ''){
-                if($mdpActuel === ''){
+            if ($nouveauMdp !== '' || $confirmer !== '') {
+                if ($mdpActuel === '') {
                     $message = "Veuillez renseigner le mot de passe actuel.";
-                } else if(!password_verify($mdpActuel, $profil['mdp_responsable'])){
+                } elseif (!password_verify($mdpActuel, $profil['mdp_responsable'])) {
                     $message = "Mot de passe actuel incorrect.";
-                } else if($nouveauMdp === '' || $confirmer === ''){
+                } elseif ($nouveauMdp === '' || $confirmer === '') {
                     $message = "Veuillez renseigner et confirmer le nouveau mot de passe.";
-                } else if($nouveauMdp !== $confirmer){
+                } elseif ($nouveauMdp !== $confirmer) {
                     $message = "La confirmation du mot de passe ne correspond pas.";
                 } else {
                     $stmtU = $pdo->prepare("UPDATE responsable SET nom_responsable=:nom, prenom_responsable=:prenom, mdp_responsable=:mdp WHERE id_responsable=:id");
                     $stmtU->execute([
-                        'nom'=>$nom,
-                        'prenom'=>$prenom,
-                        'mdp'=>password_hash($nouveauMdp, PASSWORD_DEFAULT),
-                        'id'=>$_SESSION['id']
+                        'nom' => $nom,
+                        'prenom' => $prenom,
+                        'mdp' => password_hash($nouveauMdp, PASSWORD_DEFAULT),
+                        'id' => $_SESSION['id']
                     ]);
                     $message = "Profil mis à jour.";
                     $profil['nom_responsable'] = $nom;
@@ -72,15 +72,15 @@ if(isset($_POST['enregistrer_profil'])){
             } else {
                 $stmtU = $pdo->prepare("UPDATE responsable SET nom_responsable=:nom, prenom_responsable=:prenom WHERE id_responsable=:id");
                 $stmtU->execute([
-                    'nom'=>$nom,
-                    'prenom'=>$prenom,
-                    'id'=>$_SESSION['id']
+                    'nom' => $nom,
+                    'prenom' => $prenom,
+                    'id' => $_SESSION['id']
                 ]);
                 $message = "Profil mis à jour.";
                 $profil['nom_responsable'] = $nom;
                 $profil['prenom_responsable'] = $prenom;
             }
-        } catch (PDOException $e){
+        } catch (PDOException $e) {
             $message = "Impossible de mettre à jour le profil.";
         }
     }
@@ -146,7 +146,7 @@ if(isset($_POST['enregistrer_profil'])){
                 </div>
             </div>
 
-            <?php if($message !== ''): ?>
+            <?php if ($message !== '') : ?>
                 <div class="card" style="margin-top:16px;">
                     <p><?= htmlspecialchars($message) ?></p>
                 </div>
