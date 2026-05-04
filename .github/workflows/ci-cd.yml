@@ -31,12 +31,12 @@ jobs:
 
       # 5. Correction automatique du style (PHPCBF)
       - name: Correction style (PHPCBF)
-        run: vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
+        run: vendor/bin/phpcbf --standard=phpcs.xml .
         continue-on-error: true
 
       # 6. Vérification style (PHPCS)
       - name: Vérification style (PHPCS)
-        run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor .
+        run: vendor/bin/phpcs --standard=phpcs.xml .
         continue-on-error: true
 
   deploy:
