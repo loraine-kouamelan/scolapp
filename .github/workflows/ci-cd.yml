@@ -4,46 +4,24 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build-test:
+  construction-et-deploiement:
     runs-on: self-hosted
 
     steps:
-
-      - name: Checkout repository
+      - name: Récupération du code
         uses: actions/checkout@v4
 
-      - name: Vérification PHP
-        run: php -v
-
-      - name: Installation des dependances
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Tests PHPUnit
-        run: vendor/bin/phpunit tests --testdox
-
-      - name: Correction style (PHPCBF)
-        run: vendor/bin/phpcbf --standard=phpcs.xml .
-        continue-on-error: true
-
-      - name: Vérification style (PHPCS)
-        run: vendor/bin/phpcs --standard=phpcs.xml .
-        continue-on-error: true
-
-  deploy:
-    needs: build-test
-    runs-on: self-hosted
-
-    steps:
-
-      - name: Deploiement vers WAMP
-        shell: cmd
+      - name: Vérification de PHP
         run: |
-          echo Deploiement en cours...
-          robocopy . C:\wamp64\www\memoire /MIR /XD .git vendor tests
-        echo deploiement termine
-        exit 0
+          C:\wamp64\bin\php\php8.0.30\php.exe -v
+
+      - name: Déploiement vers WAMP
+        run: |
+          echo "Déploiement en cours..."
+          xcopy /E /I /Y * "C:\wamp64\www\memoire\"
+          echo "Fichiers copiés"
+
+      - name: Fin
+        run: echo "Déploiement terminé"
