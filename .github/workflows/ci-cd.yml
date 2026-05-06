@@ -13,28 +13,23 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # 1. Récupération du code
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Vérification PHP
       - name: Vérification PHP
         run: php -v
 
-      # 3. Installation dépendances Composer
-      - name: Installation des dépendances
+      - name: Installation des dependances
         run: composer install --no-interaction --prefer-dist
 
-      # 4. Tests unitaires
       - name: Tests PHPUnit
         run: vendor/bin/phpunit tests --testdox
 
-      # 5. Correction automatique du style (PHPCBF)
       - name: Correction style (PHPCBF)
         run: vendor/bin/phpcbf --standard=phpcs.xml .
         continue-on-error: true
 
-      # 6. Vérification style (PHPCS)
       - name: Vérification style (PHPCS)
         run: vendor/bin/phpcs --standard=phpcs.xml .
         continue-on-error: true
@@ -44,11 +39,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # 7. Déploiement vers WAMP
-      - name: Déploiement vers WAMP
+
+      - name: Deploiement vers WAMP
         shell: cmd
         run: |
-          echo Déploiement en cours...
+          echo Deploiement en cours...
           robocopy . C:\wamp64\www\memoire /MIR /XD .git vendor tests
-          echo Déploiement terminé
-          exit 0
+        echo deploiement termine
+        exit 0
